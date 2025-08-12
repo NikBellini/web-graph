@@ -85,6 +85,10 @@ class ActionNode:
         self._fallback_action_max_retries = fallback_action_max_retries
         self._edge_nodes = []
 
+    @property
+    def name(self):
+        return self._name
+
     def _add_edge_node(self, node: ActionNode) -> None:
         """
         Adds an edge ActionNode to the list of edge nodes.
@@ -206,7 +210,7 @@ class WebGraph:
         self._fallback_action_max_retries = fallback_action_max_retries
         self._start_node = ActionNode("START", lambda d, s: None)
         self._starting_edge_nodes = [self._start_node]
-        self._nodes = {self._start_node._name: self._start_node}
+        self._nodes = {self._start_node.name: self._start_node}
 
     def set_state(self, new_state: dict[str, Any]) -> None:
         """
@@ -261,9 +265,9 @@ class WebGraph:
             starting_node (ActionNode | str | None): The name of the node inside the graph to which the new node will be attached.
                 If None, the starting node will be the START node.
         """
-        if self._nodes.get(node._name) is not None:
+        if self._nodes.get(node.name) is not None:
             raise Exception(
-                f"The node {node._name} that you are trying to add is already in the WebGraph. "
+                f"The node {node.name} that you are trying to add is already in the WebGraph. "
                 " The ActionNode name must be unique inside the WebGraph."
             )
 
@@ -278,7 +282,7 @@ class WebGraph:
             )
 
         if isinstance(starting_node, ActionNode):
-            starting_action_node = self._nodes.get(starting_node._name)
+            starting_action_node = self._nodes.get(starting_node.name)
         elif isinstance(starting_node, str):
             starting_action_node = self._nodes.get(starting_node)
         elif starting_node is None:
@@ -286,10 +290,10 @@ class WebGraph:
 
         if starting_action_node is not None:
             starting_action_node._add_edge_node(node)
-            self._nodes[node._name] = node
+            self._nodes[node.name] = node
         else:
             raise Exception(
-                f"The starting node {starting_node if isinstance(starting_node, str) else starting_node._name}"
+                f"The starting node {starting_node if isinstance(starting_node, str) else starting_node.name}"
                 " does not exist inside the WebGraph."
             )
 
@@ -322,7 +326,7 @@ class WebGraph:
                 and current_retries >= current_node._fallback_action_max_retries
             ):
                 raise MaxFallbackRetriesReachedException(
-                    current_node._name, current_node._fallback_action_max_retries
+                    current_node.name, current_node._fallback_action_max_retries
                 )
 
             # Reached max fallback retries defined inside the WebGraph
@@ -332,7 +336,7 @@ class WebGraph:
                 and current_retries >= self._fallback_action_max_retries
             ):
                 raise MaxFallbackRetriesReachedException(
-                    current_node._name, self._fallback_action_max_retries
+                    current_node.name, self._fallback_action_max_retries
                 )
 
             if edge_node_executed:
@@ -368,11 +372,11 @@ class WebGraph:
         node: ActionNode,
         starting_node: ActionNode | str | None = None,
     ):
-        node_name = node._name
+        node_name = node.name
         starting_node_name = (
             starting_node
             if isinstance(starting_node, str) or starting_node is None
-            else starting_node._name
+            else starting_node.name
         )
 
         if starting_node_name is not None:
