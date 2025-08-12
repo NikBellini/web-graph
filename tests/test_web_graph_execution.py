@@ -1,24 +1,14 @@
 import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
 from web_graph import WebGraph, ActionNode
-from unittest.mock import AsyncMock, Mock
-
-
-class MockWebDriver(WebDriver):
-    """
-    Mock class for testing. Because there is no need to call any WebDriver method,
-    it doesn't need initialization.
-    """
-
-    def __init__(self):
-        pass
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 
 @pytest.mark.asyncio
 async def test_run_graph():
     """Test that the ActionNodes are runned correctly in the WebGraph."""
     # WebGraph initialization
-    mock_web_driver = MockWebDriver()
+    mock_web_driver = MagicMock(spec=WebDriver)
     graph = WebGraph(mock_web_driver)
 
     # ActionNodes initialization
@@ -49,7 +39,7 @@ async def test_run_graph():
 async def test_run_graph_with_condition():
     """Test that the ActionNodes are runned correctly in the WebGraph with condition."""
     # WebGraph initialization
-    mock_web_driver = MockWebDriver()
+    mock_web_driver = MagicMock(spec=WebDriver)
     graph = WebGraph(mock_web_driver)
 
     # ActionNodes initialization

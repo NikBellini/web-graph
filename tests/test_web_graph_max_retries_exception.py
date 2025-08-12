@@ -3,24 +3,14 @@ import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
 from exceptions import MaxFallbackRetriesReachedException
 from web_graph import WebGraph, ActionNode
-from unittest.mock import AsyncMock
-
-
-class MockWebDriver(WebDriver):
-    """
-    Mock class for testing. Because there is no need to call any WebDriver method,
-    it doesn't need initialization.
-    """
-
-    def __init__(self):
-        pass
+from unittest.mock import AsyncMock, MagicMock
 
 
 @pytest.mark.asyncio
 async def test_max_fallback_set_on_graph():
     """Test that the max retries functionality when setted on WebGraph."""
     # WebGraph initialization
-    mock_web_driver = MockWebDriver()
+    mock_web_driver = MagicMock(spec=WebDriver)
     graph = WebGraph(mock_web_driver, fallback_action_max_retries=3)
 
     # ActionNode with executed fallback
@@ -71,7 +61,7 @@ async def test_max_fallback_set_on_graph():
 async def test_max_fallback_set_on_node():
     """Test that the max retries functionality when setted on ActionNode."""
     # WebGraph initialization
-    mock_web_driver = MockWebDriver()
+    mock_web_driver = MagicMock(spec=WebDriver)
     graph = WebGraph(
         mock_web_driver,
     )
@@ -128,7 +118,7 @@ async def test_max_fallback_set_on_graph_and_node():
     The priority must be on the ActionNode.
     """
     # WebGraph initialization
-    mock_web_driver = MockWebDriver()
+    mock_web_driver = MagicMock(spec=WebDriver)
     graph = WebGraph(mock_web_driver, fallback_action_max_retries=5)
 
     # ActionNode with executed fallback with less retries than the WebGraph
