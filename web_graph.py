@@ -4,6 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from selenium.webdriver.remote.webdriver import WebDriver
 from exceptions import MaxFallbackRetriesReachedException
+import inspect
 
 
 class ActionNode:
@@ -16,26 +17,41 @@ class ActionNode:
 
     Parameters:
         name (str): The name of the node. The name is also used as ID, so it must be unique inside the WebGraph.
-        action (Callable[[WebDriver], Awaitable[None]]): The action to execute.
-        condition (Callable[[WebDriver], Awaitable[bool]] | None): The condition for which the ActionNode can be executed.
-        fallback_action (Callable[[WebDriver], Awaitable[None]] | None): The fallback action executed if all the next ActionNodes conditions are not respected.
+        action (Callable[[WebDriver, dict[str, Any]], None] | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]): The action to execute.
+        condition (Callable[[WebDriver, dict[str, Any]], bool] | Callable[[WebDriver, dict[str, Any]], Awaitable[bool]] | None): The condition for which the ActionNode can be executed.
+        fallback_action (Callable[[WebDriver, dict[str, Any]], None] | Callable[[WebDriver, dict[str, Any]], Awaitable[None]] | None): The fallback action executed if all the next ActionNodes conditions are not respected.
         fallback_action_max_retries (int | None): The max number of times for which the fallback action can be executed. Once reached the limit, the graph will quit. If None, will follow the value setted inside the graph.
     """
 
     _name: str
-    _condition: Callable[[WebDriver, dict[str, Any]], Awaitable[bool]] | None
-    _action: Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
-    _fallback_action: Callable[[WebDriver, dict[str, Any]], Awaitable[None]] | None
+    _condition: (
+        Callable[[WebDriver, dict[str, Any]], bool]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[bool]]
+        | None
+    )
+    _action: (
+        Callable[[WebDriver, dict[str, Any]], None]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
+    )
+    _fallback_action: (
+        Callable[[WebDriver, dict[str, Any]], None]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
+        | None
+    )
     # The first node with the condition to True or None will be executed, while the next others won't
     _edge_nodes: list[ActionNode]
 
     def __init__(
         self,
         name: str,
-        action: Callable[[WebDriver, dict[str, Any]], Awaitable[None]],
+        action: Callable[[WebDriver, dict[str, Any]], None]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[None]],
         *,
-        condition: Callable[[WebDriver, dict[str, Any]], Awaitable[bool]] | None = None,
-        fallback_action: Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
+        condition: Callable[[WebDriver, dict[str, Any]], bool]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[bool]]
+        | None = None,
+        fallback_action: Callable[[WebDriver, dict[str, Any]], None]
+        | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
         | None = None,
         fallback_action_max_retries: int | None = None,
     ):
@@ -93,8 +109,15 @@ class ActionNode:
         """
         if self._condition is None:
             return True
-        elif await self._condition(driver, state):
-            return True
+        else:
+            condition_function_result = self._condition(driver, state)
+            condition = (
+                await condition_function_result
+                if inspect.isawaitable(condition_function_result)
+                else condition_function_result
+            )
+            if condition:
+                return True
         return False
 
     async def _run(self, driver: WebDriver, state: dict[str, Any]) -> None:
@@ -104,7 +127,9 @@ class ActionNode:
         Args:
             driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
         """
-        await self._action(driver, state)
+        action_function_result = self._action(driver, state)
+        if inspect.isawaitable(action_function_result):
+            await action_function_result
 
     async def _run_fallback(self, driver: WebDriver, state: dict[str, Any]) -> None:
         """
@@ -113,15 +138,17 @@ class ActionNode:
         Args:
             driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
         """
-        if self._fallback_action is not None:
-            await self._fallback_action(driver, state)
+        if self._fallback_action is None:
+            return
+
+        fallback_action_function_result = self._fallback_action(driver, state)
+        if inspect.isawaitable(fallback_action_function_result):
+            await fallback_action_function_result
 
 
-async def empty_action(driver: WebDriver, state: dict[str, Any]):
-    pass
-
-
-END = ActionNode("END", empty_action)  # The ending node. Once reached the graph ends
+END = ActionNode(
+    "END", lambda d, s: None
+)  # The ending node. Once reached the graph ends
 
 
 class WebGraph:
@@ -177,7 +204,7 @@ class WebGraph:
         self._driver = driver
         self._state = state if state is not None else {}
         self._fallback_action_max_retries = fallback_action_max_retries
-        self._start_node = ActionNode("START", empty_action)
+        self._start_node = ActionNode("START", lambda d, s: None)
         self._starting_edge_nodes = [self._start_node]
         self._nodes = {self._start_node._name: self._start_node}
 
@@ -236,7 +263,7 @@ class WebGraph:
         """
         if self._nodes.get(node._name) is not None:
             raise Exception(
-                f"The node {node._name} that you are trying to add is already in the WebGraph. {[n._name for n in self._nodes.values()]}"
+                f"The node {node._name} that you are trying to add is already in the WebGraph. "
                 " The ActionNode name must be unique inside the WebGraph."
             )
 

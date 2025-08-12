@@ -1,8 +1,7 @@
-from typing import Any
 import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
 from web_graph import WebGraph, ActionNode
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 
 class MockWebDriver(WebDriver):
@@ -29,7 +28,7 @@ async def test_run_graph():
     action_node_2_action = AsyncMock()
     action_node_2 = ActionNode("ActionNode2", action_node_2_action)
 
-    action_node_3_action = AsyncMock()
+    action_node_3_action = Mock()  # Not async because the graph works with both
     action_node_3 = ActionNode("ActionNode3", action_node_3_action)
 
     # Add the nodes to the WebGraph
@@ -43,7 +42,7 @@ async def test_run_graph():
     # Check if the functions are called correctly
     action_node_1_action.assert_awaited_once()
     action_node_2_action.assert_awaited_once()
-    action_node_3_action.assert_awaited_once()
+    action_node_3_action.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -60,16 +59,12 @@ async def test_run_graph_with_condition():
     action_node_2_action = AsyncMock()
     action_node_2 = ActionNode("ActionNode2", action_node_2_action)
 
-    action_node_3_action = AsyncMock()
-
-    async def action_node_3_condition(driver: WebDriver, state: dict[str, Any]):
-        return False
-
+    action_node_3_action = Mock()
     action_node_3 = ActionNode(
-        "ActionNode3", action_node_3_action, condition=action_node_3_condition
+        "ActionNode3", action_node_3_action, condition=lambda d, s: False
     )
 
-    action_node_4_action = AsyncMock()
+    action_node_4_action = Mock()
     action_node_4 = ActionNode("ActionNode4", action_node_4_action)
 
     # Add the nodes to the WebGraph
@@ -84,5 +79,5 @@ async def test_run_graph_with_condition():
     # Check if the functions are called correctly
     action_node_1_action.assert_awaited_once()
     action_node_2_action.assert_awaited_once()
-    action_node_3_action.assert_not_awaited()
-    action_node_4_action.assert_awaited_once()
+    action_node_3_action.assert_not_called()
+    action_node_4_action.assert_called_once()
