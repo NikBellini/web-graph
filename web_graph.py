@@ -349,9 +349,9 @@ class WebGraph:
         )
 
         if starting_node_name is not None:
-            if not starting_node_name in graph:
+            if starting_node_name not in graph:
                 graph.add_node(starting_node_name)
-            if not node_name in graph:
+            if node_name not in graph:
                 graph.add_node(node_name)
 
             graph.add_edge(starting_node_name, node_name)

@@ -23,7 +23,7 @@ def check_at_least_one_element(
     # Check if the elements are in the page
     try:
         search_terms = WebDriverWait(driver, timeout).until(EC.any_of(*conditions))
-    except:
+    except Exception:
         print(f"wait_at_least_one_element: No element was found in: {search_terms}")
         return False
 
@@ -45,7 +45,7 @@ def check_all_elements(
     # Check if the elements are in the page
     try:
         search_terms = WebDriverWait(driver, timeout).until(EC.all_of(*conditions))
-    except:
+    except Exception:
         print(f"wait_all_elements: No element was found in: {search_terms}")
         return False
 
