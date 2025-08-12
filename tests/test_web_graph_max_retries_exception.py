@@ -21,21 +21,30 @@ async def test_max_fallback_set_on_graph():
     """Test that the max retries functionality when setted on WebGraph."""
     # WebGraph initialization
     mock_web_driver = MockWebDriver()
-    graph = WebGraph(
-        mock_web_driver,
-        fallback_action_max_retries=3
-    )
+    graph = WebGraph(mock_web_driver, fallback_action_max_retries=3)
 
     # ActionNode with executed fallback
     executed_action_node_action = AsyncMock()
     executed_action_node_fallback_action = AsyncMock()
-    executed_action_node = ActionNode("ExecutedActionNode", executed_action_node_action, fallback_action=executed_action_node_fallback_action)
+    executed_action_node = ActionNode(
+        "ExecutedActionNode",
+        executed_action_node_action,
+        fallback_action=executed_action_node_fallback_action,
+    )
 
     # ActionNode that won't be executed
     not_executed_action_node_action = AsyncMock()
-    async def not_executed_action_node_condition(driver: WebDriver, state: dict[str, Any]):
+
+    async def not_executed_action_node_condition(
+        driver: WebDriver, state: dict[str, Any]
+    ):
         return False
-    not_executed_action_node = ActionNode("NotExecutedActionNode", not_executed_action_node_action, condition=not_executed_action_node_condition)
+
+    not_executed_action_node = ActionNode(
+        "NotExecutedActionNode",
+        not_executed_action_node_action,
+        condition=not_executed_action_node_condition,
+    )
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(executed_action_node)
@@ -70,13 +79,26 @@ async def test_max_fallback_set_on_node():
     # ActionNode with executed fallback
     executed_action_node_action = AsyncMock()
     executed_action_node_fallback_action = AsyncMock()
-    executed_action_node = ActionNode("ExecutedActionNode", executed_action_node_action, fallback_action=executed_action_node_fallback_action, fallback_action_max_retries=3)
+    executed_action_node = ActionNode(
+        "ExecutedActionNode",
+        executed_action_node_action,
+        fallback_action=executed_action_node_fallback_action,
+        fallback_action_max_retries=3,
+    )
 
     # ActionNode that won't be executed
     not_executed_action_node_action = AsyncMock()
-    async def not_executed_action_node_condition(driver: WebDriver, state: dict[str, Any]):
+
+    async def not_executed_action_node_condition(
+        driver: WebDriver, state: dict[str, Any]
+    ):
         return False
-    not_executed_action_node = ActionNode("NotExecutedActionNode", not_executed_action_node_action, condition=not_executed_action_node_condition)
+
+    not_executed_action_node = ActionNode(
+        "NotExecutedActionNode",
+        not_executed_action_node_action,
+        condition=not_executed_action_node_condition,
+    )
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(executed_action_node)
@@ -107,21 +129,31 @@ async def test_max_fallback_set_on_graph_and_node():
     """
     # WebGraph initialization
     mock_web_driver = MockWebDriver()
-    graph = WebGraph(
-        mock_web_driver,
-        fallback_action_max_retries=5
-    )
+    graph = WebGraph(mock_web_driver, fallback_action_max_retries=5)
 
     # ActionNode with executed fallback with less retries than the WebGraph
     executed_action_node_action = AsyncMock()
     executed_action_node_fallback_action = AsyncMock()
-    executed_action_node = ActionNode("ExecutedActionNode", executed_action_node_action, fallback_action=executed_action_node_fallback_action, fallback_action_max_retries=3)
+    executed_action_node = ActionNode(
+        "ExecutedActionNode",
+        executed_action_node_action,
+        fallback_action=executed_action_node_fallback_action,
+        fallback_action_max_retries=3,
+    )
 
     # ActionNode that won't be executed
     not_executed_action_node_action = AsyncMock()
-    async def not_executed_action_node_condition(driver: WebDriver, state: dict[str, Any]):
+
+    async def not_executed_action_node_condition(
+        driver: WebDriver, state: dict[str, Any]
+    ):
         return False
-    not_executed_action_node = ActionNode("NotExecutedActionNode", not_executed_action_node_action, condition=not_executed_action_node_condition)
+
+    not_executed_action_node = ActionNode(
+        "NotExecutedActionNode",
+        not_executed_action_node_action,
+        condition=not_executed_action_node_condition,
+    )
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(executed_action_node)

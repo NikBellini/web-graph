@@ -43,7 +43,7 @@ class ActionNode:
 
         if not isinstance(name, str) or not name:
             raise ValueError("The name of the ActionNode must be a non empty string.")
-        
+
         if not isinstance(action, Callable):
             raise ValueError("The action of the ActionNode must be a Callable.")
 
@@ -119,6 +119,8 @@ class ActionNode:
 
 async def empty_action(driver: WebDriver, state: dict[str, Any]):
     pass
+
+
 END = ActionNode("END", empty_action)  # The ending node. Once reached the graph ends
 
 
