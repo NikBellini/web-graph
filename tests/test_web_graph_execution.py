@@ -23,18 +23,18 @@ async def test_run_graph():
 
     # ActionNodes initialization
     action_node_1_action = AsyncMock()
-    action_node_1 = ActionNode("ActionNode1", action=action_node_1_action)
+    action_node_1 = ActionNode("ActionNode1", action_node_1_action)
 
     action_node_2_action = AsyncMock()
-    action_node_2 = ActionNode("ActionNode2", action=action_node_2_action)
+    action_node_2 = ActionNode("ActionNode2", action_node_2_action)
 
     action_node_3_action = AsyncMock()
-    action_node_3 = ActionNode("ActionNode3", action=action_node_3_action)
+    action_node_3 = ActionNode("ActionNode3", action_node_3_action)
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(action_node_1)
-    graph.add_edge_node(action_node_2, action_node_1.get_name())
-    graph.add_edge_node(action_node_3, action_node_2.get_name())
+    graph.add_edge_node(action_node_2, action_node_1)
+    graph.add_edge_node(action_node_3, action_node_2)
 
     # Run the graph
     await graph.run()
