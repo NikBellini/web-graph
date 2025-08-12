@@ -18,8 +18,11 @@ class ActionNode:
     Parameters:
         name (str): The name of the node. The name is also used as ID, so it must be unique inside the WebGraph.
         action (Callable[[WebDriver, dict[str, Any]], None] | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]): The action to execute.
+            Can be both synchronous or asynchronous.
         condition (Callable[[WebDriver, dict[str, Any]], bool] | Callable[[WebDriver, dict[str, Any]], Awaitable[bool]] | None): The condition for which the ActionNode can be executed.
+            Can be either synchronous or asynchronous.
         fallback_action (Callable[[WebDriver, dict[str, Any]], None] | Callable[[WebDriver, dict[str, Any]], Awaitable[None]] | None): The fallback action executed if all the next ActionNodes conditions are not respected.
+            Can be either synchronous or asynchronous.
         fallback_action_max_retries (int | None): The max number of times for which the fallback action can be executed. Once reached the limit, the graph will quit. If None, will follow the value setted inside the graph.
     """
 
@@ -86,7 +89,7 @@ class ActionNode:
         self._edge_nodes = []
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     def _add_edge_node(self, node: ActionNode) -> None:
@@ -212,27 +215,6 @@ class WebGraph:
         self._starting_edge_nodes = [self._start_node]
         self._nodes = {self._start_node.name: self._start_node}
 
-    def set_state(self, new_state: dict[str, Any]) -> None:
-        """
-        Sets the state given a dictionary.
-
-        Args:
-            new_state (dict[str, Any]): The new state that will replace the current one.
-        """
-        if not isinstance(self._state, dict):
-            raise ValueError("The new_state must be a dict[str, Any].")
-
-        self._state = new_state
-
-    def get_state(self) -> dict[str, Any]:
-        """
-        Gets the current state.
-
-        Returns:
-            dict[str, Any]: The current state.
-        """
-        return self._state
-
     def set_state_value(self, key: str, value: Any) -> None:
         """
         Sets a value in the state given it's key and value.
@@ -264,6 +246,10 @@ class WebGraph:
             node (ActionNode): The node to add to the graph.
             starting_node (ActionNode | str | None): The name of the node inside the graph to which the new node will be attached.
                 If None, the starting node will be the START node.
+
+        Raises:
+            Exception: If the name of the node to add is already inside the graph.
+            ValueError: If the starting node is neither an ActionNode or a string.
         """
         if self._nodes.get(node.name) is not None:
             raise Exception(
@@ -298,7 +284,13 @@ class WebGraph:
             )
 
     async def run(self) -> None:
-        """Runs the WebGraph."""
+        """
+        Runs the WebGraph.
+
+        Raises:
+            MaxFallbackRetriesReachedException: If the max fallback retries defined inside the ActionNode or
+                the WebGraph is reached. The max fallback retries of the ActionNode has a priority on the WebGraph one.
+        """
         current_node = None
         current_edge_nodes = self._starting_edge_nodes
         end_found = False
