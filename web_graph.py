@@ -329,6 +329,8 @@ class WebGraph:
             end_found = len(current_edge_nodes) == 0
 
     def draw_graph(self):
+        """Draw and print the WebGraph."""
+
         graph = nx.DiGraph()
 
         for node in self._starting_edge_nodes:
@@ -350,6 +352,11 @@ class WebGraph:
         node: ActionNode,
         starting_node: ActionNode | str | None = None,
     ):
+        """
+        Add the current and it's children nodes to the graph to print,
+        attaching it to the starting node.
+        """
+
         node_name = node.name
         starting_node_name = (
             starting_node
