@@ -41,8 +41,6 @@ class ActionNode:
         | Callable[[WebDriver, dict[str, Any]], Awaitable[None]]
         | None
     )
-    # The first node with the condition to True or None will be executed, while the next others won't
-    _edge_nodes: list[ActionNode]
 
     def __init__(
         self,
@@ -86,24 +84,12 @@ class ActionNode:
         self._condition = condition
         self._fallback_action = fallback_action
         self._fallback_action_max_retries = fallback_action_max_retries
-        self._edge_nodes = []
 
     @property
     def name(self) -> str:
         return self._name
 
-    def _add_edge_node(self, node: ActionNode) -> None:
-        """
-        Adds an edge ActionNode to the list of edge nodes.
-
-        Args:
-            node (ActionNode): The ActionNode to add to the edge list.
-        """
-        self._edge_nodes.append(node)
-
-    async def _check_execution_condition(
-        self, driver: WebDriver, state: dict[str, Any]
-    ) -> bool:
+    async def run_condition(self, driver: WebDriver, state: dict[str, Any]) -> bool:
         """
         Executes the condition function if defined and return the result.
         If not defined, returns True.
@@ -127,7 +113,7 @@ class ActionNode:
                 return True
         return False
 
-    async def _run(self, driver: WebDriver, state: dict[str, Any]) -> None:
+    async def run(self, driver: WebDriver, state: dict[str, Any]) -> None:
         """
         Executes the action.
 
@@ -138,7 +124,7 @@ class ActionNode:
         if inspect.isawaitable(action_function_result):
             await action_function_result
 
-    async def _run_fallback(self, driver: WebDriver, state: dict[str, Any]) -> None:
+    async def run_fallback(self, driver: WebDriver, state: dict[str, Any]) -> None:
         """
         Executes the fallback action if defined.
 
@@ -183,8 +169,8 @@ class WebGraph:
     _state: dict
     _fallback_action_max_retries: int | None = None
     _start_node: ActionNode
-    _starting_edge_nodes: list[ActionNode]
-    _nodes: dict[str, ActionNode]
+    _starting_edge_nodes: list[dict[ActionNode, list[ActionNode]]]
+    _nodes: dict[str, dict[ActionNode, list[ActionNode]]]
 
     def __init__(
         self,
@@ -213,7 +199,9 @@ class WebGraph:
         self._fallback_action_max_retries = fallback_action_max_retries
         self._start_node = ActionNode("START", lambda d, s: None)
         self._starting_edge_nodes = [self._start_node]
-        self._nodes = {self._start_node.name: self._start_node}
+        self._nodes = {
+            self._start_node.name: {"node": self._start_node, "edge_nodes": []}
+        }
 
     def set_state_value(self, key: str, value: Any) -> None:
         """
@@ -268,15 +256,15 @@ class WebGraph:
             )
 
         if isinstance(starting_node, ActionNode):
-            starting_action_node = self._nodes.get(starting_node.name)
+            starting_node_dict = self._nodes.get(starting_node.name)
         elif isinstance(starting_node, str):
-            starting_action_node = self._nodes.get(starting_node)
+            starting_node_dict = self._nodes.get(starting_node)
         elif starting_node is None:
-            starting_action_node = self._start_node
+            starting_node_dict = self._nodes.get(self._start_node.name)
 
-        if starting_action_node is not None:
-            starting_action_node._add_edge_node(node)
-            self._nodes[node.name] = node
+        if starting_node_dict is not None:
+            starting_node_dict["edge_nodes"].append(node)
+            self._nodes[node.name] = {"node": node, "edge_nodes": []}
         else:
             raise Exception(
                 f"The starting node {starting_node if isinstance(starting_node, str) else starting_node.name}"
@@ -301,12 +289,10 @@ class WebGraph:
             # Execute the first edge node with condition True
             edge_node_executed = False
             for edge_node in current_edge_nodes:
-                if not await edge_node._check_execution_condition(
-                    self._driver, self._state
-                ):
+                if not await edge_node.run_condition(self._driver, self._state):
                     continue
 
-                await edge_node._run(self._driver, self._state)
+                await edge_node.run(self._driver, self._state)
                 edge_node_executed = True
                 current_retries = 0
                 current_node = edge_node  # Pass to the next node
@@ -333,20 +319,20 @@ class WebGraph:
 
             if edge_node_executed:
                 # Pass to the next edge nodes
-                current_edge_nodes = current_node._edge_nodes
+                current_edge_nodes = self._nodes[current_node.name]["edge_nodes"]
             else:
                 # No node in the list executed, run the fallback action
-                await current_node._run_fallback(self._driver, self._state)
+                await current_node.run_fallback(self._driver, self._state)
                 current_retries += 1
 
             # If a node doesn't have edge nodes, it means that we are at the end of the graph
-            end_found = len(current_node._edge_nodes) == 0
+            end_found = len(current_edge_nodes) == 0
 
     def draw_graph(self):
         graph = nx.DiGraph()
 
         for node in self._starting_edge_nodes:
-            self._add_node_to_draw_graph(graph, node)
+            self._add_nodes_to_draw_graph(graph, node)
 
         nx.draw(
             graph,
@@ -358,7 +344,7 @@ class WebGraph:
         )
         plt.show()
 
-    def _add_node_to_draw_graph(
+    def _add_nodes_to_draw_graph(
         self,
         graph: nx.DiGraph,
         node: ActionNode,
@@ -379,5 +365,5 @@ class WebGraph:
 
             graph.add_edge(starting_node_name, node_name)
 
-        for edge_node in node._edge_nodes:
-            self._add_node_to_draw_graph(graph, edge_node, node)
+        for edge_node in self._nodes[node_name]["edge_nodes"]:
+            self._add_nodes_to_draw_graph(graph, edge_node, node)
