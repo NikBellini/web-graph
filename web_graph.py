@@ -28,7 +28,7 @@ class ActionNodeSettings(BaseModel):
 
 class ActionNode:
     """
-    Represents a single executable action in a web automation graph.
+    `ActionNode` represents a single executable action in a web automation graph.
 
     An ActionNode performs an operation using a Selenium WebDriver, such as clicking
     a button or entering text. Nodes can be connected to create a flow of actions with
