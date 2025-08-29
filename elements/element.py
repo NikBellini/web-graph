@@ -21,7 +21,6 @@ class ElementSettings(BaseModel):
     xpath: Optional[str] = None
 
 
-# TODO: Write tests for retrieve and other methods if necessary
 class Element:
     """
     `Element` represents a structured HTML element locator for use in web automation.
