@@ -127,3 +127,4 @@ await graph.run()
 - Definition of other methods for the `Element` class like click etc.
 - Definition of actions like scroll, reload, go to etc.
 - Definition of other classes children of `Element` like `Button`, `Input` etc.
+- Fix the draw graph functionality.
