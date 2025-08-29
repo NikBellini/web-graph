@@ -204,6 +204,7 @@ class WebGraph:
 
     _settings: WebGraphSettings
     _start_node: ActionNode = ActionNode("START", lambda: None)
+    _current_node: ActionNode = _start_node
     _starting_edge_nodes: List[WebGraphNode]
     _nodes: Dict[str, WebGraphNode]
 
@@ -231,6 +232,7 @@ class WebGraph:
     ) -> None:
         """
         Adds a new edge attaching the given node to a node inside the graph.
+        Also set the added node as the current node.
 
         Args:
             node (ActionNode): The node to add to the graph.
@@ -268,11 +270,42 @@ class WebGraph:
             new_webgraph_node = WebGraphNode(node=node)
             starting_webgraph_node.edge_nodes.append(new_webgraph_node)
             self._nodes[node.name] = new_webgraph_node
+            self._current_node = node
         else:
             raise Exception(
                 f"The starting node {starting_node if isinstance(starting_node, str) else starting_node.name}"
                 " does not exist inside the WebGraph."
             )
+
+    def add_step(self, name: str, action: ActionType) -> ActionNode:
+        """
+        Adds a step, a minimal ActionNode with just a name and an action, to the WebGraph.
+
+        Args:
+            name (str): The name of the step (ActionNode).
+            action (ActionType): The action of the step (ActionNode).
+
+        Returns:
+            ActionNode: The new created minimal ActionNode.
+        """
+        new_node = ActionNode(name=name, action=action)
+        self.add_edge_node(new_node, starting_node=self._current_node)
+        return new_node
+
+    def set_current_node(self, node: ActionNode) -> None:
+        """
+        Set the given node as the current node, the node to which the
+        added steps will be automatically attached.
+
+        Args:
+            node (ActionNode): The node to set as current node.
+        """
+        if self._nodes.get(node.name) is None:
+            ValueError(
+                f"Can't setup {node.name} as current node "
+                "because it is not present inside the WebGraph."
+            )
+        self._current_node = node
 
     async def run(self) -> None:
         """

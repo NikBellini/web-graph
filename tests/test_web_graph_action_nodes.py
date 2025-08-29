@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 
 
 @pytest.mark.asyncio
-async def test_run_graph():
+async def test_run_graph_with_action_nodes():
     """Test that the ActionNodes are runned correctly in the WebGraph."""
     # WebGraph initialization
     mock_web_driver = MagicMock(spec=WebDriver)
@@ -37,7 +37,7 @@ async def test_run_graph():
 
 
 @pytest.mark.asyncio
-async def test_run_graph_with_state():
+async def test_run_graph_with_action_nodes_and_state():
     """
     Test that the ActionNodes are runned correctly in the WebGraph
     and the state is passed correctly.
