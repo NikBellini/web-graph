@@ -18,12 +18,12 @@ class ActionNodeSettings(BaseModel):
     condition: Optional[
         Callable[[WebDriver, Dict[str, Any]], bool]
         | Callable[[WebDriver, Dict[str, Any]], Awaitable[bool]]
-    ]
+    ] = None
     fallback_action: Optional[
         Callable[[WebDriver, Dict[str, Any]], None]
         | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]]
-    ]
-    fallback_action_max_retries: Optional[int]
+    ] = None
+    fallback_action_max_retries: Optional[int] = None
 
 
 class ActionNode:
