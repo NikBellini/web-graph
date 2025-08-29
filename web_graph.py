@@ -327,9 +327,9 @@ class WebGraph:
             # If a node doesn't have edge nodes, it means that we are at the end of the graph
             end_found = len(current_edge_nodes) == 0
 
-    def draw_graph(self):
+    def _draw_graph(self):
         """Draw and print the WebGraph."""
-
+        # TODO: fix
         graph = nx.DiGraph()
 
         for node in self._starting_edge_nodes:
@@ -355,7 +355,7 @@ class WebGraph:
         Add the current and it's children nodes to the graph to print,
         attaching it to the starting node.
         """
-
+        # TODO: fix
         node_name = node.name
         starting_node_name = (
             starting_node
