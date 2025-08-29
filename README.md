@@ -122,7 +122,7 @@ await graph.run()
 
 - **Methods**:
   - `add_edge_node(node, starting_node)`: Adds a node to the graph.
-  - `add_step(name, action)`: Adds a step to the graph that is basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node. Returns the created `ActionNode`.
+  - `add_step(name, action)`: Adds a step to the graph that is basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last setted node. Returns the created `ActionNode`.
   - `set_current_node(node)`: Sets the given node as current node if the given node exists in the graph.
   - `run()`: Executes the graph from the START node.
 
