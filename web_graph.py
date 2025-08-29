@@ -139,8 +139,8 @@ END = ActionNode("END", lambda d, s: None)
 
 class WebGraphSettings(BaseModel):
     driver: WebDriver
-    state: Optional[Dict[str, Any]]
-    fallback_action_max_retries: Optional[int]
+    state: Optional[Dict[str, Any]] = None
+    fallback_action_max_retries: Optional[int] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
