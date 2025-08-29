@@ -9,20 +9,25 @@ from pydantic import BaseModel, ConfigDict
 import inspect
 
 
+ActionType = (
+    Callable[[WebDriver, Dict[str, Any]], None | Awaitable[None]]
+    | Callable[[WebDriver], None | Awaitable[None]]
+    | Callable[[Dict[str, Any]], None | Awaitable[None]]
+    | Callable[[], None | Awaitable[None]]
+)
+ConditionType = (
+    Callable[[WebDriver, Dict[str, Any]], bool | Awaitable[bool]]
+    | Callable[[WebDriver], bool | Awaitable[bool]]
+    | Callable[[Dict[str, Any]], bool | Awaitable[bool]]
+    | Callable[[], bool | Awaitable[bool]]
+)
+
+
 class ActionNodeSettings(BaseModel):
     name: str
-    action: (
-        Callable[[WebDriver, Dict[str, Any]], None]
-        | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]]
-    )
-    condition: Optional[
-        Callable[[WebDriver, Dict[str, Any]], bool]
-        | Callable[[WebDriver, Dict[str, Any]], Awaitable[bool]]
-    ] = None
-    fallback_action: Optional[
-        Callable[[WebDriver, Dict[str, Any]], None]
-        | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]]
-    ] = None
+    action: Optional[ActionType] = None
+    condition: Optional[ConditionType] = None
+    fallback_action: Optional[ActionType] = None
     fallback_action_max_retries: Optional[int] = None
 
 
@@ -82,6 +87,15 @@ class ActionNode:
     def fallback_action_max_retries(self):
         return self._settings.fallback_action_max_retries
 
+    async def run(self, driver: WebDriver, state: Dict[str, Any]) -> None:
+        """
+        Executes the action.
+
+        Args:
+            driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
+        """
+        await self._call_function(self._settings.action, driver, state)
+
     async def run_condition(self, driver: WebDriver, state: Dict[str, Any]) -> bool:
         """
         Executes the condition function if defined and return the result.
@@ -97,26 +111,12 @@ class ActionNode:
         if self._settings.condition is None:
             return True
         else:
-            condition_function_result = self._settings.condition(driver, state)
-            condition = (
-                await condition_function_result
-                if inspect.isawaitable(condition_function_result)
-                else condition_function_result
+            condition = await self._call_function(
+                self._settings.condition, driver, state
             )
             if condition:
                 return True
         return False
-
-    async def run(self, driver: WebDriver, state: Dict[str, Any]) -> None:
-        """
-        Executes the action.
-
-        Args:
-            driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
-        """
-        action_function_result = self._settings.action(driver, state)
-        if inspect.isawaitable(action_function_result):
-            await action_function_result
 
     async def run_fallback(self, driver: WebDriver, state: Dict[str, Any]) -> None:
         """
@@ -128,13 +128,41 @@ class ActionNode:
         if self._settings.fallback_action is None:
             return
 
-        fallback_action_function_result = self._settings.fallback_action(driver, state)
-        if inspect.isawaitable(fallback_action_function_result):
-            await fallback_action_function_result
+        await self._call_function(self._settings.fallback_action, driver, state)
+
+    async def _call_function(
+        self, f: Callable, driver: WebDriver, state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Calls the function awaiting if necessary.
+
+        Args:
+            function (Callable): The function to call.
+            driver (WebDriver): The WebDriver to pass in case the function accepts it.
+            state (Dict[str, Any]): The state to pass in case the function accepts it.
+
+        Returns:
+            Dict[str, Any]: The kwargs to pass to the function.
+        """
+        function_parameters = inspect.signature(f).parameters
+        kwargs = {}
+        if "driver" in function_parameters:
+            kwargs["driver"] = driver
+        if "state" in function_parameters:
+            kwargs["state"] = state
+
+        function_result = f(**kwargs)
+        result = (
+            await function_result
+            if inspect.isawaitable(function_result)
+            else function_result
+        )
+
+        return result
 
 
 # The ending node. Once reached the graph ends
-END = ActionNode("END", lambda d, s: None)
+END = ActionNode("END", lambda: None)
 
 
 class WebGraphSettings(BaseModel):
@@ -175,7 +203,7 @@ class WebGraph:
     """
 
     _settings: WebGraphSettings
-    _start_node: ActionNode = ActionNode("START", lambda d, s: None)
+    _start_node: ActionNode = ActionNode("START", lambda: None)
     _starting_edge_nodes: List[WebGraphNode]
     _nodes: Dict[str, WebGraphNode]
 

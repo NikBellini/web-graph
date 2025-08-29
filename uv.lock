@@ -550,7 +550,7 @@ wheels = [
 ]
 
 [[package]]
-name = "selenium-graph"
+name = "web-graph"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -75,6 +75,7 @@ node = ActionNode(
   - `condition`: Optional callable returning a boolean.
   - `fallback_action`: Optional callable executed if no node runs.
   - `fallback_action_max_retries`: Maximum number of fallback retries.
+> `driver` and `state` can be omitted in `action`, `condition` and `fallback_action`. If needed `driver` and `state` can be defined as kwargs in the function signature. If passed any other argument, an error will occurr.
 
 - **Methods**:
   - `run(driver, state)`: Executes the node action.
@@ -123,7 +124,6 @@ await graph.run()
 
 ## TODO
 
-- Instead of passing `driver` and `state` always inside the `WebGraph`, pass only when requested by the method.
 - Definition of other methods for the `Element` class like click etc.
 - Definition of actions like scroll, reload, go to etc.
 - Definition of other classes children of `Element` like `Button`, `Input` etc.

@@ -4,6 +4,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from web_graph_exceptions import MaxFallbackRetriesReachedError
 from web_graph import WebGraph, ActionNode
 from unittest.mock import AsyncMock, MagicMock
+from typing import Dict
 
 
 @pytest.mark.asyncio
@@ -26,7 +27,7 @@ async def test_max_fallback_set_on_graph():
     not_executed_action_node_action = AsyncMock()
 
     async def not_executed_action_node_condition(
-        driver: WebDriver, state: dict[str, Any]
+        driver: WebDriver, state: Dict[str, Any]
     ):
         return False
 
@@ -80,7 +81,7 @@ async def test_max_fallback_set_on_node():
     not_executed_action_node_action = AsyncMock()
 
     async def not_executed_action_node_condition(
-        driver: WebDriver, state: dict[str, Any]
+        driver: WebDriver, state: Dict[str, Any]
     ):
         return False
 
@@ -135,7 +136,7 @@ async def test_max_fallback_set_on_graph_and_node():
     not_executed_action_node_action = AsyncMock()
 
     async def not_executed_action_node_condition(
-        driver: WebDriver, state: dict[str, Any]
+        driver: WebDriver, state: Dict[str, Any]
     ):
         return False
 
