@@ -12,6 +12,6 @@ def test_element():
     )
 
     assert (
-        element.build_css_selector()
+        element._build_css_selector()
         == 'button#my-button[name="my-magic-button"].visible.red.clickable[type="button"][data-role="form-field"]'
     )

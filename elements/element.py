@@ -74,7 +74,7 @@ class Element:
                 index=index,
             )
 
-    def build_css_selector(self) -> str:
+    def _build_css_selector(self) -> str:
         """Builds the string that represents the CSS Selector of the current element."""
         selector = self._settings.tag or "*"
 
@@ -101,7 +101,7 @@ class Element:
         if self._settings.xpath:
             return driver.find_element(By.XPATH, self._settings.xpath)
 
-        selector = self.build_css_selector()
+        selector = self._build_css_selector()
         elements = driver.find_elements(By.CSS_SELECTOR, selector)
 
         if not elements:
