@@ -110,7 +110,6 @@ await graph.run()
 - **Methods**:
   - `add_edge_node(node, starting_node)`: Adds a node to the graph.
   - `run()`: Executes the graph from the START node.
-  - `set_state_value(key, value)` / `get_state_value(key)`: Manage shared state.
 
 - **Special nodes**:
   - START: Entry point.
