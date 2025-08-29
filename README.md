@@ -26,7 +26,7 @@ The element is not searched until a method that needs it is called.
 
 ### Usage
 
-```
+```python
 from elements.element import Element
 
 element = Element(
@@ -55,7 +55,7 @@ web_element = element.retrieve(driver)  # Returns Selenium WebElement
 
 Represents a single executable action in a `WebGraph`.
 
-```
+```python
 from web_graph import ActionNode
 from elements.element import Element
 
@@ -86,7 +86,7 @@ node = ActionNode(
 
 Manages execution flow of interconnected `ActionNode`s.
 
-```
+```python
 from selenium import webdriver
 
 driver = webdriver.Chrome()
