@@ -100,8 +100,6 @@ node = ActionNode(
 Manages execution flow of interconnected `ActionNode`s.
 
 ```python
-from selenium import webdriver
-
 driver = webdriver.Chrome()
 graph = WebGraph(driver)
 
@@ -109,7 +107,19 @@ fill_node = ActionNode(name="FillForm", action=fill_form)
 submit_node = ActionNode(name="SubmitForm", action=click_submit)
 
 graph.add_edge_node(fill_node)
-graph.add_edge_node(submit_node, starting_node=fill_node)
+graph.add_edge_node(submit_node)
+
+await graph.run()
+```
+
+If a simple action without condition and/or fallback must be executed, instead of a node, can be added a step, basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last current node setted. The `add_step` method returns the created `ActionNode`.
+
+```python
+driver = webdriver.Chrome()
+graph = WebGraph(driver)
+
+graph.add_step("FillForm", fill_form)
+graph.add_step("SubmitForm", click_submit)
 
 await graph.run()
 ```
@@ -121,8 +131,8 @@ await graph.run()
   - Shared state across nodes
 
 - **Methods**:
-  - `add_edge_node(node, starting_node)`: Adds a node to the graph.
-  - `add_step(name, action)`: Adds a step to the graph that is basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last setted node. Returns the created `ActionNode`.
+  - `add_edge_node(node, starting_node)`: Adds a node to the graph. If the starting node is not given, the given node will be attached to the last added node. At start the default starting node is `START`.
+  - `add_step(name, action)`: Adds a step to the graph that is basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last current node setted. At start the default starting node is `START`. Returns the created `ActionNode`.
   - `set_current_node(node)`: Sets the given node as current node if the given node exists in the graph.
   - `run()`: Executes the graph from the START node.
 
@@ -141,3 +151,4 @@ await graph.run()
 - Definition of actions like scroll, reload, go to etc.
 - Definition of other classes children of `Element` like `Button`, `Input` etc.
 - Fix the draw graph functionality.
+- Fix README examples.

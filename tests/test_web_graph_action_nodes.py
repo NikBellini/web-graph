@@ -24,8 +24,8 @@ async def test_run_graph_with_action_nodes():
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(action_node_1)
-    graph.add_edge_node(action_node_2, action_node_1)
-    graph.add_edge_node(action_node_3, action_node_2)
+    graph.add_edge_node(action_node_2)
+    graph.add_edge_node(action_node_3)
 
     # Run the graph
     await graph.run()

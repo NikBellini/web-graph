@@ -162,6 +162,7 @@ class ActionNode:
 
 
 # The ending node. Once reached the graph ends
+START = ActionNode("START", lambda: None)
 END = ActionNode("END", lambda: None)
 
 
@@ -203,8 +204,7 @@ class WebGraph:
     """
 
     _settings: WebGraphSettings
-    _start_node: ActionNode = ActionNode("START", lambda: None)
-    _current_node: ActionNode = _start_node
+    _current_node: ActionNode = START
     _starting_edge_nodes: List[WebGraphNode]
     _nodes: Dict[str, WebGraphNode]
 
@@ -221,14 +221,14 @@ class WebGraph:
             fallback_action_max_retries=fallback_action_max_retries,
         )
 
-        start_webgraph_node = WebGraphNode(node=self._start_node)
+        start_webgraph_node = WebGraphNode(node=START)
         self._starting_edge_nodes = [start_webgraph_node]
-        self._nodes = {self._start_node.name: start_webgraph_node}
+        self._nodes = {START.name: start_webgraph_node}
 
     def add_edge_node(
         self,
         node: ActionNode,
-        starting_node: ActionNode | str | None = None,
+        starting_node: ActionNode | None = None,
     ) -> None:
         """
         Adds a new edge attaching the given node to a node inside the graph.
@@ -236,8 +236,9 @@ class WebGraph:
 
         Args:
             node (ActionNode): The node to add to the graph.
-            starting_node (ActionNode | str | None): The name of the node inside the graph to
-                which the new node will be attached. If None, the starting node will be the START node.
+            starting_node (ActionNode | None): The name of the node inside the graph to
+                which the new node will be attached. If None, the starting node will be the current node.
+                At start the current node is the START node.
 
         Raises:
             Exception: If the name of the node to add is already inside the graph.
@@ -261,10 +262,8 @@ class WebGraph:
 
         if isinstance(starting_node, ActionNode):
             starting_webgraph_node = self._nodes.get(starting_node.name)
-        elif isinstance(starting_node, str):
-            starting_webgraph_node = self._nodes.get(starting_node)
         elif starting_node is None:
-            starting_webgraph_node = self._nodes.get(self._start_node.name)
+            starting_webgraph_node = self._nodes.get(self._current_node.name)
 
         if starting_webgraph_node is not None:
             new_webgraph_node = WebGraphNode(node=node)
@@ -273,7 +272,7 @@ class WebGraph:
             self._current_node = node
         else:
             raise Exception(
-                f"The starting node {starting_node if isinstance(starting_node, str) else starting_node.name}"
+                f"The starting node {starting_node.name}"
                 " does not exist inside the WebGraph."
             )
 
