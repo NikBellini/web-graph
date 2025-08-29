@@ -120,3 +120,10 @@ await graph.run()
 - `ElementNotFoundError`: Raised if no element matches the locator.
 - `ElementNotUniqueError`: Raised if multiple elements match and no index is provided.
 - `MaxFallbackRetriesReachedError`: Raised when max fallback retries are exceeded.
+
+## TODO
+
+- Instead of passing `driver` and `state` always inside the `WebGraph`, pass only when requested by the method.
+- Definition of other methods for the `Element` class like click etc.
+- Definition of actions like scroll, reload, go to etc.
+- Definition of other classes children of `Element` like `Button`, `Input` etc.
