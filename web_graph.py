@@ -224,25 +224,6 @@ class WebGraph:
         self._starting_edge_nodes = [start_webgraph_node]
         self._nodes = {self._start_node.name: start_webgraph_node}
 
-    def set_state_value(self, key: str, value: Any) -> None:
-        """
-        Sets a value in the state given it's key and value.
-
-        Args:
-            key (str): The key where to put the value.
-            value (Any): The value to add to the state.
-        """
-        self._settings.state[key] = value
-
-    def get_state_value(self, key: str) -> Any | None:
-        """
-        Gets a value in the state given it's key. If the key doesn't exit returns None.
-
-        Returns:
-            Any | None: The retrieved value. If the key doesn't exist inside the state, returns None.
-        """
-        return self._settings.state.get(key)
-
     def add_edge_node(
         self,
         node: ActionNode,
