@@ -45,11 +45,24 @@ web_element = element.retrieve(driver)  # Returns Selenium WebElement
   - `retrieve(driver)`: Returns the Selenium `WebElement` or raises:
     - `ElementNotFoundError`
     - `ElementNotUniqueError`
+    - `TimeoutException`
+  - `get_text(driver) -> str`: Retrieves the visible text of the element.
+  - `get_tag_name(driver) -> str`: Retrieves the tag name of the element.
+  - `get_attribute(driver, name) -> str`: Retrieves the value of the specified HTML attribute.
+  - `value_of_css_property(driver, name) -> str`: Retrieves the computed value of the CSS property.
+  - `get_location(driver) -> Dict`: Retrieves the element's coordinates: `{'x': ..., 'y': ...}`.
+  - `get_size(driver) -> Dict`: Retrieves the element's size: `{'height': ..., 'width': ...}`.
+  - `get_rect(driver) -> Dict`: Retrieves the element's rectangle: `{'x':..., 'y':..., 'height':..., 'width':...}`.
+  - `is_displayed(driver) -> bool`: Returns `True` if the element is visible.
+  - `is_enabled(driver) -> bool`: Returns `True` if the element is enabled/interactable.
+  - `click(driver) -> None`: Clicks the element.
 
 - **Validation rules**:
   - Either XPath **or** other attributes can be provided, not both.
   - At least one attribute or XPath must be specified.
   - If multiple elements match and no index is provided `ElementNotUniqueError` is raised.
+
+> Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
 
 ## ActionNode Class
 
@@ -123,7 +136,6 @@ await graph.run()
 
 ## TODO
 
-- Definition of other methods for the `Element` class like click etc.
 - Definition of actions like scroll, reload, go to etc.
 - Definition of other classes children of `Element` like `Button`, `Input` etc.
 - Fix the draw graph functionality.
