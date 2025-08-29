@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable
 import networkx as nx
 import matplotlib.pyplot as plt
 from selenium.webdriver.remote.webdriver import WebDriver
-from exceptions import MaxFallbackRetriesReachedException
+from web_graph_exceptions import MaxFallbackRetriesReachedError
 from typing import List, Dict, Optional
 from pydantic import BaseModel, ConfigDict
 import inspect
@@ -299,7 +299,7 @@ class WebGraph:
                 current_node.node.fallback_action_max_retries is not None
                 and current_retries >= current_node.node.fallback_action_max_retries
             ):
-                raise MaxFallbackRetriesReachedException(
+                raise MaxFallbackRetriesReachedError(
                     current_node.node.name,
                     current_node.node.fallback_action_max_retries,
                 )
@@ -310,7 +310,7 @@ class WebGraph:
                 and self._settings.fallback_action_max_retries is not None
                 and current_retries >= self._settings.fallback_action_max_retries
             ):
-                raise MaxFallbackRetriesReachedException(
+                raise MaxFallbackRetriesReachedError(
                     current_node.node.name, self._settings.fallback_action_max_retries
                 )
 

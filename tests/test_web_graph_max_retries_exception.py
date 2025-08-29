@@ -1,7 +1,7 @@
 from typing import Any
 import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
-from exceptions import MaxFallbackRetriesReachedException
+from web_graph_exceptions import MaxFallbackRetriesReachedError
 from web_graph import WebGraph, ActionNode
 from unittest.mock import AsyncMock, MagicMock
 
@@ -44,7 +44,7 @@ async def test_max_fallback_set_on_graph():
     try:
         await graph.run()
         assert False
-    except MaxFallbackRetriesReachedException:
+    except MaxFallbackRetriesReachedError:
         pass
     except Exception:
         assert False
@@ -98,7 +98,7 @@ async def test_max_fallback_set_on_node():
     try:
         await graph.run()
         assert False
-    except MaxFallbackRetriesReachedException:
+    except MaxFallbackRetriesReachedError:
         pass
     except Exception:
         assert False
@@ -153,7 +153,7 @@ async def test_max_fallback_set_on_graph_and_node():
     try:
         await graph.run()
         assert False
-    except MaxFallbackRetriesReachedException:
+    except MaxFallbackRetriesReachedError:
         pass
     except Exception:
         assert False
