@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import Callable, List, Dict, Optional
 from pydantic import BaseModel
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -133,45 +133,85 @@ class Element:
 
         return elements[self._settings.index]
 
-    def get_text(self, driver: WebDriver) -> str:
-        """Retrieves the text inside the Element."""
-        return self.retrieve(driver).text
+    def get_text(self) -> Callable[[WebDriver], str]:
+        """Returns a function that retrieves the text inside the Element."""
 
-    def get_tag_name(self, driver: WebDriver) -> str:
-        """Retrieves the tag_name of the Element."""
-        return self.retrieve(driver).tag_name
+        def f(driver: WebDriver) -> str:
+            return self.retrieve(driver).text
 
-    def get_attribute(self, driver: WebDriver, name: str) -> str:
-        """Retrieves the attribute by it's name."""
-        return self.retrieve(driver).get_attribute(name)
+        return f
 
-    def value_of_css_property(self, driver: WebDriver, name: str) -> str:
-        """Retrieves the value_of_css_property by it's name."""
-        return self.retrieve(driver).value_of_css_property(name)
+    def get_tag_name(self) -> Callable[[WebDriver], str]:
+        """Returns a function that retrieves the tag_name of the Element."""
 
-    def get_location(self, driver: WebDriver) -> Dict:
-        """Retrieves the location of the Element."""
-        return self.retrieve(driver).location
+        def f(driver: WebDriver) -> str:
+            return self.retrieve(driver).tag_name
 
-    def get_size(self, driver: WebDriver) -> Dict:
-        """Retrieves the size of the Element."""
-        return self.retrieve(driver).size
+        return f
 
-    def get_rect(self, driver: WebDriver) -> Dict:
-        """Retrieves the rect of the Element."""
-        return self.retrieve(driver).rect
+    def get_attribute(self, name: str) -> Callable[[WebDriver], str]:
+        """Returns a function that retrieves the attribute by it's name."""
 
-    def is_displayed(self, driver: WebDriver) -> bool:
-        """Checks if the Element is displayed."""
-        return self.retrieve(driver).is_displayed()
+        def f(driver: WebDriver) -> str:
+            return self.retrieve(driver).get_attribute(name)
 
-    def is_enabled(self, driver: WebDriver) -> bool:
-        """Checks if the Element is enabled."""
-        return self.retrieve(driver).is_enabled()
+        return f
 
-    def click(self, driver: WebDriver) -> None:
-        """Clicks the Element."""
-        self.retrieve(driver).click()
+    def value_of_css_property(self, name: str) -> Callable[[WebDriver], Dict]:
+        """Returns a function that retrieves the value_of_css_property by it's name."""
+
+        def f(driver: WebDriver) -> Dict:
+            return self.retrieve(driver).value_of_css_property(name)
+
+        return f
+
+    def get_location(self) -> Callable[[WebDriver], Dict]:
+        """Returns a function that retrieves the location of the Element."""
+
+        def f(driver: WebDriver) -> Dict:
+            return self.retrieve(driver).location
+
+        return f
+
+    def get_size(self) -> Callable[[WebDriver], Dict]:
+        """Returns a function that retrieves the size of the Element."""
+
+        def f(driver: WebDriver) -> Dict:
+            return self.retrieve(driver).size
+
+        return f
+
+    def get_rect(self) -> Callable[[WebDriver], Dict]:
+        """Returns a function that retrieves the rect of the Element."""
+
+        def f(driver: WebDriver) -> Dict:
+            return self.retrieve(driver).rect
+
+        return f
+
+    def is_displayed(self) -> Callable[[WebDriver], bool]:
+        """Returns a function that retrieves checks if the Element is displayed."""
+
+        def f(driver: WebDriver) -> bool:
+            return self.retrieve(driver).is_displayed()
+
+        return f
+
+    def is_enabled(self) -> Callable[[WebDriver], bool]:
+        """Returns a function that retrieves checks if the Element is enabled."""
+
+        def f(driver: WebDriver) -> bool:
+            return self.retrieve(driver).is_enabled()
+
+        return f
+
+    def click(self) -> Callable[[WebDriver], None]:
+        """Returns a function that clicks the Element."""
+
+        def f(driver: WebDriver):
+            self.retrieve(driver).click()
+
+        return f
 
     def _build_css_selector(self) -> str:
         """

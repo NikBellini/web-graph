@@ -46,23 +46,23 @@ web_element = element.retrieve(driver)  # Returns Selenium WebElement
     - `ElementNotFoundError`
     - `ElementNotUniqueError`
     - `TimeoutException`
-  - `get_text(driver) -> str`: Retrieves the visible text of the element.
-  - `get_tag_name(driver) -> str`: Retrieves the tag name of the element.
-  - `get_attribute(driver, name) -> str`: Retrieves the value of the specified HTML attribute.
-  - `value_of_css_property(driver, name) -> str`: Retrieves the computed value of the CSS property.
-  - `get_location(driver) -> Dict`: Retrieves the element's coordinates: `{'x': ..., 'y': ...}`.
-  - `get_size(driver) -> Dict`: Retrieves the element's size: `{'height': ..., 'width': ...}`.
-  - `get_rect(driver) -> Dict`: Retrieves the element's rectangle: `{'x':..., 'y':..., 'height':..., 'width':...}`.
-  - `is_displayed(driver) -> bool`: Returns `True` if the element is visible.
-  - `is_enabled(driver) -> bool`: Returns `True` if the element is enabled/interactable.
-  - `click(driver) -> None`: Clicks the element.
+  - `get_text()`: Returns a function that retrieves the visible text of the element.
+  - `get_tag_name()`: Returns a function that retrieves the tag name of the element.
+  - `get_attribute(name)`: Returns a function that retrieves the value of the specified HTML attribute.
+  - `value_of_css_property(name)`: Returns a function that retrieves the computed value of the CSS property.
+  - `get_location()`: Returns a function that retrieves the element's coordinates: `{'x': ..., 'y': ...}`.
+  - `get_size()`: Returns a function that retrieves the element's size: `{'height': ..., 'width': ...}`.
+  - `get_rect()`: Returns a function that retrieves the element's rectangle: `{'x':..., 'y':..., 'height':..., 'width':...}`.
+  - `is_displayed()`: Returns a function that returns `True` if the element is visible.
+  - `is_enabled()`: Returns a function that returns `True` if the element is enabled/interactable.
+  - `click()`: Returns a function that clicks the element.
 
 - **Validation rules**:
   - Either XPath **or** other attributes can be provided, not both.
   - At least one attribute or XPath must be specified.
   - If multiple elements match and no index is provided `ElementNotUniqueError` is raised.
 
-> Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
+> Each method returns a function that accepts a WebDriver as argument and doesn't execute directly the action. Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
 
 ## ActionNode Class
 
