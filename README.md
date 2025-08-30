@@ -75,7 +75,7 @@ from elements.element import Element
 button = Element(tag="button", id="submit")
 node = ActionNode(
   name="ClickSubmit",
-  action=lambda driver, state: button.retrieve(driver).click(),
+  action=button.click(),
   condition=lambda driver, state: True, # Optional
   fallback_action=lambda driver, state: print("Fallback executed"), # Optional
   fallback_action_max_retries=3 # Optional
