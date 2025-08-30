@@ -62,7 +62,7 @@ web_element = element.retrieve(driver)  # Returns Selenium WebElement
   - At least one attribute or XPath must be specified.
   - If multiple elements match and no index is provided `ElementNotUniqueError` is raised.
 
-> Each method returns a function that accepts a WebDriver as argument and doesn't execute directly the action. Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
+> Each method returns a function that accepts a `WebDriver` as argument and doesn't execute directly the action. Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
 
 ## ActionNode Class
 
