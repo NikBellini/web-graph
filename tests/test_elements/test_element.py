@@ -1,5 +1,5 @@
 from unittest.mock import Mock
-from src.web_graph.elements.element import Element
+from web_graph.elements.element import Element
 
 
 def test_element_foundamental_methods(monkeypatch):
@@ -26,7 +26,7 @@ def test_element_foundamental_methods(monkeypatch):
         return element_mock
 
     monkeypatch.setattr(
-        "src.web_graph.elements.element.WebDriverWait.until", until_mock
+        "web_graph.elements.element.WebDriverWait.until", until_mock
     )
 
     # Test the retrieve method
@@ -63,7 +63,7 @@ def test_element_generic_methods(monkeypatch):
         return element_mock
 
     monkeypatch.setattr(
-        "src.web_graph.elements.element.WebDriverWait.until", until_mock
+        "web_graph.elements.element.WebDriverWait.until", until_mock
     )
 
     # Test the generic methods

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from src.web_graph.elements.elements_exceptions import (
+from web_graph.elements.elements_exceptions import (
     ElementNotFoundError,
     ElementNotUniqueError,
 )

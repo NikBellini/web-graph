@@ -3,8 +3,8 @@ from typing import Any
 import networkx as nx
 import matplotlib.pyplot as plt
 from selenium.webdriver.remote.webdriver import WebDriver
-from src.web_graph.graph.nodes.action_node import ActionNode, ActionType
-from src.web_graph.graph.web_graph_exceptions import MaxFallbackRetriesReachedError
+from web_graph.graph.nodes.action_node import ActionNode, ActionType
+from web_graph.graph.web_graph_exceptions import MaxFallbackRetriesReachedError
 from typing import List
 from pydantic import BaseModel, ConfigDict
 

@@ -1,7 +1,7 @@
 import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
-from src.web_graph.graph.web_graph import WebGraph
-from src.web_graph.graph.nodes.action_node import ActionNode
+from web_graph.graph.web_graph import WebGraph
+from web_graph.graph.nodes.action_node import ActionNode
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 
