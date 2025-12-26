@@ -1,9 +1,12 @@
-from typing import Callable, List, Dict, Optional
+from typing import Callable, Dict
 from pydantic import BaseModel
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from elements.elements_exceptions import ElementNotFoundError, ElementNotUniqueError
+from src.web_graph.elements.elements_exceptions import (
+    ElementNotFoundError,
+    ElementNotUniqueError,
+)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -12,50 +15,53 @@ FIND_ELEMENTS_TIMEOUT = 10
 
 
 class ElementSettings(BaseModel):
-    tag: Optional[str] = None
-    id: Optional[str] = None
-    name: Optional[str] = None
-    class_names: Optional[List[str]] = None
-    attrs: Optional[Dict[str, str]] = None
-    index: Optional[int] = None
-    xpath: Optional[str] = None
+    tag: str | None = None
+    id: str | None = None
+    name: str | None = None
+    class_names: list[str] | None = None
+    attrs: dict[str, str] | None = None
+    index: int | None = None
+    xpath: str | None = None
 
 
 class Element:
     """
-    `Element` represents a structured HTML element locator for use in web automation.
+    Represents a structured HTML element locator for use in web automation.
 
     An Element can be defined using standard attributes such as tag, id, name,
     class names, and other HTML attributes, or by providing a complete XPath.
     It stores these criteria internally in an `ElementSettings` object and can
     dynamically build a CSS selector to locate the element in Selenium.
-
-    Parameters:
-        tag (Optional[str]): The HTML tag of the element (e.g., "input", "div").
-        id (Optional[str]): The id attribute of the element.
-        name (Optional[str]): The name attribute of the element.
-        class_names (Optional[List[str]]): A list of class names the element should have.
-        attrs (Optional[Dict[str, str]]): A dictionary of other HTML attributes to match.
-        index (Optional[int]): The index of the element if more than one is found.
-        xpath (Optional[str]): An XPath string that directly locates the element.
-
-    Validation rules:
-        - Either XPath or other attributes can be provided, but not both.
-        - At least one attribute or XPath must be specified.
     """
 
     _settings: ElementSettings
 
     def __init__(
         self,
-        tag: Optional[str] = None,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        class_names: Optional[List[str]] = None,
-        attrs: Optional[Dict[str, str]] = None,
-        index: Optional[int] = None,
-        xpath: Optional[str] = None,
+        tag: str | None = None,
+        id: str | None = None,
+        name: str | None = None,
+        class_names: list[str] | None = None,
+        attrs: dict[str, str] | None = None,
+        index: int | None = None,
+        xpath: str | None = None,
     ):
+        """
+        Initializes the Element.
+
+        Validation rules:
+            - Either XPath or other attributes can be provided, but not both.
+            - At least one attribute or XPath must be specified.
+
+        Args:
+            tag (str | None): The HTML tag of the element (e.g., "input", "div").
+            id (str | None): The id attribute of the element.
+            name (str | None): The name attribute of the element.
+            class_names (list[str] | None): A list of class names the element should have.
+            attrs (dict[str, str] | None): A dictionary of other HTML attributes to match.
+            index (int | None): The index of the element if more than one is found.
+            xpath (str | None): An XPath string that directly locates the element.
+        """
         at_least_one_attribute_passed = any([tag, id, name, class_names, attrs, index])
 
         if xpath and at_least_one_attribute_passed:

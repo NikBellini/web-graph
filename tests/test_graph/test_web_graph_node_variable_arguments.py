@@ -1,13 +1,14 @@
 import pytest
 from selenium.webdriver.remote.webdriver import WebDriver
-from web_graph import WebGraph, ActionNode
+from src.web_graph.graph.web_graph import WebGraph
+from src.web_graph.graph.nodes.action_node import ActionNode
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 
 @pytest.mark.asyncio
 async def test_run_graph_with_node_variable_arguments():
     """
-    Test that the ActionNodes are runned correctly in the WebGraph with condition,
+    Tests that the ActionNodes are runned correctly in the WebGraph with condition,
     given different combinations of driver and state arguments.
     """
     # WebGraph initialization
