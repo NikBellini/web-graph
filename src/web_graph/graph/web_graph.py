@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class WebGraphSettings(BaseModel):
-    driver: Any  # WebDriver
+    driver: WebDriver
     state: dict[str, Any] | None = None
     fallback_action_max_retries: int | None = None
 
