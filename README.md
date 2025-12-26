@@ -83,7 +83,7 @@ node = ActionNode(
 ```
 
 - **Parameters**:
-  - `name`: Unique node identifier.
+  - `name`: The name of the node.
   - `action`: Callable executed by the node.
   - `condition`: Optional callable returning a boolean.
   - `fallback_action`: Optional callable executed if no node runs.
@@ -150,5 +150,4 @@ await graph.run()
 
 - Definition of actions like scroll, reload, go to etc.
 - Definition of other classes children of `Element` like `Button`, `Input` etc.
-- Fix the draw graph functionality.
 - Fix README examples.

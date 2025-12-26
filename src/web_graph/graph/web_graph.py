@@ -9,12 +9,8 @@ from typing import List
 from pydantic import BaseModel, ConfigDict
 
 
-START = ActionNode("START", lambda: None)
-END = ActionNode("END", lambda: None)  # The ending node. Once reached the graph ends
-
-
 class WebGraphSettings(BaseModel):
-    driver: WebDriver
+    driver: Any  # WebDriver
     state: dict[str, Any] | None = None
     fallback_action_max_retries: int | None = None
 
@@ -22,6 +18,13 @@ class WebGraphSettings(BaseModel):
 
 
 class WebGraphNode(BaseModel):
+    """
+    WebGraph node used as a wrapper around the ActionNode to handle the
+    ActionNode edge nodes.
+
+    Must not be used outside the WebGraph class.
+    """
+
     node: ActionNode
     edge_nodes: List[WebGraphNode] = []
 
@@ -65,10 +68,10 @@ class WebGraph:
             state=state,
             fallback_action_max_retries=fallback_action_max_retries,
         )
-        self._current_node: ActionNode = START
-        start_webgraph_node = WebGraphNode(node=START)
-        self._starting_edge_nodes = [start_webgraph_node]
-        self._nodes = {START.name: start_webgraph_node}
+        start_node = ActionNode("START", lambda: None)
+        self._current_node = start_node
+        self._starting_node = WebGraphNode(node=start_node)
+        self._nodes = {start_node.id: self._starting_node}
 
     def add_edge_node(
         self,
@@ -86,34 +89,31 @@ class WebGraph:
                 At start the current node is the START node.
 
         Raises:
-            Exception: If the name of the node to add is already inside the graph.
-            ValueError: If the starting node is neither an ActionNode or a string.
+            ValueError: If the ActionNode is already inside the graph, if the starting node
+                is not an ActionNode, if the starting node is not inside the graph or if the name
+                of the node is START because it is the name of the starting node of the graph and can't be used
+                in a normal node.
         """
-        if self._nodes.get(node.name) is not None:
-            raise Exception(
-                f"The node {node.name} that you are trying to add is already in the WebGraph. "
-                " The ActionNode name must be unique inside the WebGraph."
+        if self._nodes.get(node.id) is not None:
+            raise ValueError(
+                f"The node {node.id} that you are trying to add is already in the WebGraph. "
+                " The ActionNode ID must be unique inside the WebGraph."
             )
 
-        if (
-            starting_node is not None
-            and not isinstance(starting_node, ActionNode)
-            and not isinstance(starting_node, str)
-            and not starting_node
-        ):
+        if node.name == "START":
             raise ValueError(
-                "The starting_node must be an ActionNode, a non empty string or None."
+                "The name of the node must be different from START because it is the name of the graph starting node."
             )
 
         if isinstance(starting_node, ActionNode):
-            starting_webgraph_node = self._nodes.get(starting_node.name)
+            starting_webgraph_node = self._nodes.get(starting_node.id)
         elif starting_node is None:
-            starting_webgraph_node = self._nodes.get(self._current_node.name)
+            starting_webgraph_node = self._nodes.get(self._current_node.id)
 
         if starting_webgraph_node is not None:
             new_webgraph_node = WebGraphNode(node=node)
             starting_webgraph_node.edge_nodes.append(new_webgraph_node)
-            self._nodes[node.name] = new_webgraph_node
+            self._nodes[node.id] = new_webgraph_node
             self._current_node = node
         else:
             raise Exception(
@@ -138,13 +138,13 @@ class WebGraph:
 
     def set_current_node(self, node: ActionNode) -> None:
         """
-        Set the given node as the current node, the node to which the
+        Sets the given node as the current node, the node to which the
         added steps will be automatically attached.
 
         Args:
             node (ActionNode): The node to set as current node.
         """
-        if self._nodes.get(node.name) is None:
+        if self._nodes.get(node.id) is None:
             ValueError(
                 f"Can't setup {node.name} as current node "
                 "because it is not present inside the WebGraph."
@@ -160,7 +160,7 @@ class WebGraph:
                 the WebGraph is reached. The max fallback retries of the ActionNode has a priority on the WebGraph one.
         """
         current_node = None
-        current_edge_nodes = self._starting_edge_nodes
+        current_edge_nodes = self._starting_node.edge_nodes
         end_found = False
         current_retries = 0
 
@@ -186,7 +186,7 @@ class WebGraph:
                 and current_retries >= current_node.node.fallback_action_max_retries
             ):
                 raise MaxFallbackRetriesReachedError(
-                    current_node.node.name,
+                    current_node.node.id,
                     current_node.node.fallback_action_max_retries,
                 )
 
@@ -197,12 +197,12 @@ class WebGraph:
                 and current_retries >= self._settings.fallback_action_max_retries
             ):
                 raise MaxFallbackRetriesReachedError(
-                    current_node.node.name, self._settings.fallback_action_max_retries
+                    current_node.node.id, self._settings.fallback_action_max_retries
                 )
 
             if edge_node_executed:
                 # Pass to the next edge nodes
-                current_edge_nodes = self._nodes[current_node.node.name].edge_nodes
+                current_edge_nodes = self._nodes[current_node.node.id].edge_nodes
             else:
                 # No node in the list executed, run the fallback action
                 await current_node.node.run_fallback(
@@ -213,13 +213,10 @@ class WebGraph:
             # If a node doesn't have edge nodes, it means that we are at the end of the graph
             end_found = len(current_edge_nodes) == 0
 
-    def _draw_graph(self):
-        """Draw and print the WebGraph."""
-        # TODO: fix
+    def draw(self):
+        """Draws the WebGraph."""
         graph = nx.DiGraph()
-
-        for node in self._starting_edge_nodes:
-            self._add_nodes_to_draw_graph(graph, node)
+        self._add_nodes_to_draw_graph(graph, self._starting_node)
 
         nx.draw(
             graph,
@@ -234,28 +231,34 @@ class WebGraph:
     def _add_nodes_to_draw_graph(
         self,
         graph: nx.DiGraph,
-        node: ActionNode,
-        starting_node: ActionNode | str | None = None,
+        node: WebGraphNode,
+        parent_node: WebGraphNode | None = None,
     ):
         """
-        Add the current and it's children nodes to the graph to print,
+        Adds the current and it's children nodes to the graph to print,
         attaching it to the starting node.
+
+        Args:
+            graph (DiGraph): The nx graph on wich attach the nodes.
+            node (WebGraphNode): The node to attach to the DiGraph graph.
+            parent_node (WebGraphNode | None): The parent node of the current node or None
+                if it's the starting node. If not None, it must exist in `graph`.
         """
-        # TODO: fix
-        node_name = node.name
-        starting_node_name = (
-            starting_node
-            if isinstance(starting_node, str) or starting_node is None
-            else starting_node.name
+        # This because the name in the graph must be unique
+        node_name = (
+            f"{node.node.name}-{node.node.id}"
+            if node.node.name != "START"
+            else node.node.name
         )
+        graph.add_node(node_name)
 
-        if starting_node_name is not None:
-            if starting_node_name not in graph:
-                graph.add_node(starting_node_name)
-            if node_name not in graph:
-                graph.add_node(node_name)
+        if parent_node is not None:
+            parent_node_name = (
+                f"{parent_node.node.name}-{parent_node.node.id}"
+                if parent_node.node.name != "START"
+                else parent_node.node.name
+            )
+            graph.add_edge(parent_node_name, node_name)
 
-            graph.add_edge(starting_node_name, node_name)
-
-        for edge_node in self._nodes[node_name].node.edge_nodes:
+        for edge_node in self._nodes[node.node.id].edge_nodes:
             self._add_nodes_to_draw_graph(graph, edge_node, node)

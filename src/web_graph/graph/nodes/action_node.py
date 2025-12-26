@@ -4,6 +4,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from typing import Dict
 from pydantic import BaseModel
 import inspect
+import random
 
 
 ActionType = (
@@ -40,15 +41,9 @@ class ActionNode:
     def __init__(
         self,
         name: str,
-        action: (
-            Callable[[WebDriver, Dict[str, Any]], None]
-            | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]]
-        ),
-        condition: Callable[[WebDriver, Dict[str, Any]], bool]
-        | Callable[[WebDriver, Dict[str, Any]], Awaitable[bool]]
-        | None = None,
-        fallback_action: Callable[[WebDriver, Dict[str, Any]], None]
-        | Callable[[WebDriver, Dict[str, Any]], Awaitable[None] | None] = None,
+        action: ActionType,
+        condition: ConditionType | None = None,
+        fallback_action: ActionType | None = None,
         fallback_action_max_retries: int | None = None,
     ):
         """
@@ -56,13 +51,11 @@ class ActionNode:
 
         Args:
             name (str): The name of the node. The name is also used as ID, so it must be unique inside the WebGraph.
-            action (Callable[[WebDriver, Dict[str, Any]], None] | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]]):
-                The action to execute. Can be both synchronous or asynchronous.
-            condition (Callable[[WebDriver, Dict[str, Any]], bool] | Callable[[WebDriver, Dict[str, Any]], Awaitable[bool]] | None):
-                The condition for which the ActionNode can be executed. Can be either synchronous or asynchronous.
-            fallback_action (Callable[[WebDriver, Dict[str, Any]], None] | Callable[[WebDriver, Dict[str, Any]], Awaitable[None]] | None):
-                The fallback action executed if all the next ActionNodes conditions are not respected.
+            action (ActionType): The action to execute. Can be both synchronous or asynchronous.
+            condition (ConditionType | None): The condition for which the ActionNode can be executed.
                 Can be either synchronous or asynchronous.
+            fallback_action (ActionType | None): The fallback action executed if all the next ActionNodes conditions are not respected.
+                Can be both synchronous or asynchronous.
             fallback_action_max_retries (int | None): The max number of times for which the fallback action can be executed.
                 Once reached the limit, the graph will quit. If None, will follow the value setted inside the graph.
         """
@@ -73,13 +66,18 @@ class ActionNode:
             fallback_action=fallback_action,
             fallback_action_max_retries=fallback_action_max_retries,
         )
+        self._id = f"{random.randint(1, 10000):05}"  # TODO: check if it's better to use something else
 
     @property
-    def name(self):
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def name(self) -> str:
         return self._settings.name
 
     @property
-    def fallback_action_max_retries(self):
+    def fallback_action_max_retries(self) -> int:
         return self._settings.fallback_action_max_retries
 
     async def run(self, driver: WebDriver, state: Dict[str, Any]) -> None:
