@@ -4,11 +4,7 @@ from web_graph.elements.element import Element
 
 
 class Input(Element):
-
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         """
         Initializes the Input Element.
 
@@ -23,27 +19,27 @@ class Input(Element):
         is fixed to `input`. If passed, be sure that the XPath points to an element
         with the `input` tag.
         """
-        super.__init__(
-            tag="input",
-            **kwargs
-        )
+        super.__init__(tag="input", **kwargs)
 
     def send_keys(self, keys: str) -> Callable[[WebDriver], None]:
         """Returns a function that sends the keys to the Input Element."""
+
         def f(driver: WebDriver) -> None:
             self.retrieve(driver).send_keys(keys)
 
         return f
-    
+
     def clear(self) -> Callable[[WebDriver], None]:
         """Returns a function that clears the Input Element."""
+
         def f(driver: WebDriver) -> None:
             self.retrieve(driver).clear()
 
         return f
-    
+
     def clear_send_keys(self, keys: str) -> Callable[[WebDriver], None]:
         """Returns a function that clears and then sends the keys to the Input Element."""
+
         def f(driver: WebDriver) -> None:
             self.retrieve(driver).clear()
             self.retrieve(driver).send_keys(keys)

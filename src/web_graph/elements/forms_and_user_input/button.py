@@ -4,10 +4,7 @@ from web_graph.elements.element import Element
 class Button(Element):
     """Represents a HTML button locator for use in web automation."""
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         """
         Initializes the Button Element.
 

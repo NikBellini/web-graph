@@ -25,9 +25,7 @@ def test_element_foundamental_methods(monkeypatch):
     def until_mock(*args, **kwargs):
         return element_mock
 
-    monkeypatch.setattr(
-        "web_graph.elements.element.WebDriverWait.until", until_mock
-    )
+    monkeypatch.setattr("web_graph.elements.element.WebDriverWait.until", until_mock)
 
     # Test the retrieve method
     assert element.retrieve(driver_mock) == element_mock
@@ -56,9 +54,7 @@ def test_element_generic_methods(monkeypatch):
     def until_mock(*args, **kwargs):
         return element_mock
 
-    monkeypatch.setattr(
-        "web_graph.elements.element.WebDriverWait.until", until_mock
-    )
+    monkeypatch.setattr("web_graph.elements.element.WebDriverWait.until", until_mock)
 
     assert element.text_contains("test")(driver_mock)
     assert element.is_displayed()(driver_mock)

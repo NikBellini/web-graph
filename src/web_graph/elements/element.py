@@ -25,13 +25,13 @@ class ElementSettings(BaseModel):
 
     @model_validator(mode="after")
     def field_validation(self):
-        at_least_one_attribute_passed = any([self.id, self.name, self.class_names, self.attrs, self.index])
+        at_least_one_attribute_passed = any(
+            [self.id, self.name, self.class_names, self.attrs, self.index]
+        )
 
         # Check that the xpath or other attributes are passed and not both
         if self.xpath and at_least_one_attribute_passed:
-            ValueError(
-                "You can pass only attributes like ID, name etc. OR the XPath."
-            )
+            ValueError("You can pass only attributes like ID, name etc. OR the XPath.")
 
         # Check if at least one attribute or xpath is passed
         if not self.xpath and not self.tag and not at_least_one_attribute_passed:
@@ -82,7 +82,7 @@ class Element:
             name=name,
             class_names=class_names,
             attrs=attrs,
-            index=index
+            index=index,
         )
 
     def retrieve(self, driver: WebDriver) -> WebElement:
@@ -143,6 +143,7 @@ class Element:
 
     def is_displayed(self) -> Callable[[WebDriver], bool]:
         """Returns a function that checks if the Element is displayed."""
+
         def f(driver: WebDriver) -> bool:
             return self.retrieve(driver).is_displayed()
 
@@ -150,20 +151,23 @@ class Element:
 
     def is_enabled(self) -> Callable[[WebDriver], bool]:
         """Returns a function that checks if the Element is enabled."""
+
         def f(driver: WebDriver) -> bool:
             return self.retrieve(driver).is_enabled()
 
         return f
-    
+
     def text_contains(self, text: str) -> Callable[[WebDriver], bool]:
         """Returns a function that check if the element contains the given text."""
+
         def f(driver: WebDriver) -> bool:
             return text in self.retrieve(driver).text
-        
+
         return f
 
     def click(self) -> Callable[[WebDriver], None]:
         """Returns a function that clicks the Element."""
+
         def f(driver: WebDriver) -> None:
             self.retrieve(driver).click()
 
