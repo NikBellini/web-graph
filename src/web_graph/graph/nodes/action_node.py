@@ -1,31 +1,30 @@
 from __future__ import annotations
 from typing import Any, Awaitable, Callable
 from selenium.webdriver.remote.webdriver import WebDriver
-from typing import Dict
 from pydantic import BaseModel
 import inspect
 import random
 
 
 ActionType = (
-    Callable[[WebDriver, Dict[str, Any]], None | Awaitable[None]]
+    Callable[[WebDriver, dict[str, Any]], None | Awaitable[None]]
     | Callable[[WebDriver], None | Awaitable[None]]
-    | Callable[[Dict[str, Any]], None | Awaitable[None]]
+    | Callable[[dict[str, Any]], None | Awaitable[None]]
     | Callable[[], None | Awaitable[None]]
 )
 ConditionType = (
-    Callable[[WebDriver, Dict[str, Any]], bool | Awaitable[bool]]
+    Callable[[WebDriver, dict[str, Any]], bool | Awaitable[bool]]
     | Callable[[WebDriver], bool | Awaitable[bool]]
-    | Callable[[Dict[str, Any]], bool | Awaitable[bool]]
+    | Callable[[dict[str, Any]], bool | Awaitable[bool]]
     | Callable[[], bool | Awaitable[bool]]
 )
 
 
 class ActionNodeSettings(BaseModel):
     name: str
-    action: ActionType | None = None
-    condition: ConditionType | None = None
-    fallback_action: ActionType | None = None
+    actions: list[ActionType] = []
+    conditions: list[ConditionType] = []
+    fallback_actions: list[ActionType] = []
     fallback_action_max_retries: int | None = None
 
 
@@ -41,9 +40,9 @@ class ActionNode:
     def __init__(
         self,
         name: str,
-        action: ActionType,
-        condition: ConditionType | None = None,
-        fallback_action: ActionType | None = None,
+        actions: list[ActionType],
+        conditions: list[ConditionType] = [],
+        fallback_actions: list[ActionType] = [],
         fallback_action_max_retries: int | None = None,
     ):
         """
@@ -51,19 +50,19 @@ class ActionNode:
 
         Args:
             name (str): The name of the node. The name is also used as ID, so it must be unique inside the WebGraph.
-            action (ActionType): The action to execute. Can be both synchronous or asynchronous.
-            condition (ConditionType | None): The condition for which the ActionNode can be executed.
-                Can be either synchronous or asynchronous.
-            fallback_action (ActionType | None): The fallback action executed if all the next ActionNodes conditions are not respected.
-                Can be both synchronous or asynchronous.
+            actions (list[ActionType]): The list of actions to execute sequentially. Can be both synchronous or asynchronous.
+            condition (list[ConditionType]): The list of conditions for which the ActionNode can be executed executed
+                sequentially. Can be either synchronous or asynchronous.
+            fallback_action (list[ActionType]): The list of fallback actions executed sequentially if all the next
+                ActionNodes conditions are not respected. Can be both synchronous or asynchronous.
             fallback_action_max_retries (int | None): The max number of times for which the fallback action can be executed.
                 Once reached the limit, the graph will quit. If None, will follow the value setted inside the graph.
         """
         self._settings = ActionNodeSettings(
             name=name,
-            action=action,
-            condition=condition,
-            fallback_action=fallback_action,
+            actions=actions,
+            conditions=conditions,
+            fallback_actions=fallback_actions,
             fallback_action_max_retries=fallback_action_max_retries,
         )
         self._id = f"{random.randint(1, 10000):05}"  # TODO: check if it's better to use something else
@@ -80,62 +79,61 @@ class ActionNode:
     def fallback_action_max_retries(self) -> int:
         return self._settings.fallback_action_max_retries
 
-    async def run(self, driver: WebDriver, state: Dict[str, Any]) -> None:
+    async def run(self, driver: WebDriver, state: dict[str, Any]) -> None:
         """
         Executes the action.
 
         Args:
             driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
+            state (dict[str, Any]): The state of the graph.
         """
-        await self._call_function(self._settings.action, driver, state)
+        for action in self._settings.actions:
+            await self._call_function(action, driver, state)
 
-    async def run_condition(self, driver: WebDriver, state: Dict[str, Any]) -> bool:
+    async def run_conditions(self, driver: WebDriver, state: dict[str, Any]) -> bool:
         """
-        Executes the condition function if defined and return the result.
-        If not defined, returns True.
+        Executes the condition functions if defined and return the result.
+        If not defined, returns True. The conditions must be all true to return True.
 
         Args:
             driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
+            state (dict[str, Any]): The state of the graph.
 
         Returns:
-            bool: A boolean that indicates if the condition is True or False.
-                If the condition function is None, returns True.
+            bool: A boolean that indicates if the conditions are all True (returns True)
+                or at least one is False (returns False). If the conditions are not defined
+                returns True.
         """
-        if self._settings.condition is None:
-            return True
-        else:
-            condition = await self._call_function(
-                self._settings.condition, driver, state
-            )
-            if condition:
-                return True
-        return False
+        for condition in self._settings.conditions:
+            if not await self._call_function(condition, driver, state):
+                return False
 
-    async def run_fallback(self, driver: WebDriver, state: Dict[str, Any]) -> None:
+        return True
+
+    async def run_fallbacks(self, driver: WebDriver, state: dict[str, Any]) -> None:
         """
-        Executes the fallback action if defined.
+        Executes the fallback actions if defined.
 
         Args:
             driver (WebDriver): The Web Driver with all the properties, like the current page, already setted.
+            state (dict[str, Any]): The state of the graph.
         """
-        if self._settings.fallback_action is None:
-            return
-
-        await self._call_function(self._settings.fallback_action, driver, state)
+        for action in self._settings.fallback_actions:
+            await self._call_function(action, driver, state)
 
     async def _call_function(
-        self, f: Callable, driver: WebDriver, state: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, f: Callable, driver: WebDriver, state: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Calls the function awaiting if necessary.
 
         Args:
             function (Callable): The function to call.
             driver (WebDriver): The WebDriver to pass in case the function accepts it.
-            state (Dict[str, Any]): The state to pass in case the function accepts it.
+            state (dict[str, Any]): The state to pass in case the function accepts it.
 
         Returns:
-            Dict[str, Any]: The kwargs to pass to the function.
+            dict[str, Any]: The kwargs to pass to the function.
         """
         function_parameters = inspect.signature(f).parameters
         kwargs = {}

@@ -14,18 +14,18 @@ async def test_run_graph_with_condition():
 
     # ActionNodes initialization
     action_node_1_action = AsyncMock()
-    action_node_1 = ActionNode("ActionNode1", action_node_1_action)
+    action_node_1 = ActionNode("ActionNode1", [action_node_1_action])
 
     action_node_2_action = AsyncMock()
-    action_node_2 = ActionNode("ActionNode2", action_node_2_action)
+    action_node_2 = ActionNode("ActionNode2", [action_node_2_action])
 
     action_node_3_action = Mock()
     action_node_3 = ActionNode(
-        "ActionNode3", action_node_3_action, condition=lambda driver, state: False
+        "ActionNode3", [action_node_3_action], conditions=[lambda driver, state: False]
     )
 
     action_node_4_action = Mock()
-    action_node_4 = ActionNode("ActionNode4", action_node_4_action)
+    action_node_4 = ActionNode("ActionNode4", [action_node_4_action])
 
     # Add the nodes to the WebGraph
     graph.add_edge_node(action_node_1)

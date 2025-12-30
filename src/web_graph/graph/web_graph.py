@@ -51,7 +51,7 @@ class WebGraph:
         driver: WebDriver,
         *,
         state: dict[str, Any] | None = None,
-        fallback_action_max_retries: int | None = None,
+        default_fallback_actions_max_retries: int | None = None,
     ):
         """
         Initializes the WebGraph.
@@ -60,15 +60,15 @@ class WebGraph:
             driver (WebDriver): The Web Driver to use inside the WebGraph.
             state (dict[str, Any] | None): A state passed inside all the ActionNodes,
                 used to save information that must be mantained between the nodes.
-            fallback_action_max_retries (int | None): The default max number of fallbacks retries.
+            default_fallback_actions_max_retries (int | None): The default max number of fallbacks retries.
                 If None the retries are infinite. If a node defines the max retries, this value is overwritten.
         """
         self._settings = WebGraphSettings(
             driver=driver,
             state=state,
-            fallback_action_max_retries=fallback_action_max_retries,
+            fallback_action_max_retries=default_fallback_actions_max_retries,
         )
-        start_node = ActionNode("START", lambda: None)
+        start_node = ActionNode("START", list[lambda: None])
         self._current_node = start_node
         self._starting_node = WebGraphNode(node=start_node)
         self._nodes = {start_node.id: self._starting_node}
@@ -121,18 +121,18 @@ class WebGraph:
                 " does not exist inside the WebGraph."
             )
 
-    def add_step(self, name: str, action: ActionType) -> ActionNode:
+    def add_step(self, name: str, actions: list[ActionType]) -> ActionNode:
         """
-        Adds a step, a minimal ActionNode with just a name and an action, to the WebGraph.
+        Adds a step, a minimal ActionNode with just a name and a list of actions, to the WebGraph.
 
         Args:
             name (str): The name of the step (ActionNode).
-            action (ActionType): The action of the step (ActionNode).
+            actions (list[ActionType]): The action of the step (ActionNode).
 
         Returns:
             ActionNode: The new created minimal ActionNode.
         """
-        new_node = ActionNode(name=name, action=action)
+        new_node = ActionNode(name=name, actions=actions)
         self.add_edge_node(new_node, starting_node=self._current_node)
         return new_node
 
@@ -169,7 +169,7 @@ class WebGraph:
             # Execute the first edge node with condition True
             edge_node_executed = False
             for edge_node in current_edge_nodes:
-                if not await edge_node.node.run_condition(
+                if not await edge_node.node.run_conditions(
                     self._settings.driver, self._settings.state
                 ):
                     continue
@@ -205,7 +205,7 @@ class WebGraph:
                 current_edge_nodes = self._nodes[current_node.node.id].edge_nodes
             else:
                 # No node in the list executed, run the fallback action
-                await current_node.node.run_fallback(
+                await current_node.node.run_fallbacks(
                     self._settings.driver, self._settings.state
                 )
                 current_retries += 1

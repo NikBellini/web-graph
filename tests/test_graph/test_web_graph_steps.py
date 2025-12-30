@@ -13,13 +13,13 @@ async def test_run_graph_with_steps():
 
     # Steps initialization
     step_1_action = AsyncMock()
-    graph.add_step("Step1", step_1_action)
+    graph.add_step("Step1", [step_1_action])
 
     step_2_action = AsyncMock()
-    graph.add_step("Step2", step_2_action)
+    graph.add_step("Step2", [step_2_action])
 
     step_3_action = Mock()  # Not async because the graph works with both
-    graph.add_step("Step3", step_3_action)
+    graph.add_step("Step3", [step_3_action])
 
     # Run the graph
     await graph.run()

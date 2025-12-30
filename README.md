@@ -70,25 +70,25 @@ from elements.element import Element
 button = Element(tag="button", id="submit")
 node = ActionNode(
   name="ClickSubmit",
-  action=button.click(),
-  condition=lambda driver, state: True, # Optional
-  fallback_action=lambda driver, state: print("Fallback executed"), # Optional
+  actions=[button.click()],
+  conditions=[lambda driver, state: True], # Optional
+  fallback_actions=[lambda driver, state: print("Fallback executed")], # Optional
   fallback_action_max_retries=3 # Optional
 )
 ```
 
 - **Parameters**:
   - `name`: The name of the node.
-  - `action`: Callable executed by the node.
-  - `condition`: Optional callable returning a boolean.
-  - `fallback_action`: Optional callable executed if no node runs.
+  - `actions`: List of callable executed by the node.
+  - `conditions`: Optional list of callable returning a boolean.
+  - `fallback_action`: Optional list of callable executed if no node runs.
   - `fallback_action_max_retries`: Maximum number of fallback retries.
 > `driver` and `state` can be omitted in `action`, `condition` and `fallback_action`. If needed `driver` and `state` can be defined as kwargs in the function signature. If passed any other argument, an error will occurr.
 
 - **Methods**:
   - `run(driver, state)`: Executes the node action.
-  - `run_condition(driver, state)`: Evaluates the condition (default True if None).
-  - `run_fallback(driver, state)`: Executes fallback action.
+  - `run_conditions(driver, state)`: Evaluates the conditions (default True if not defined).
+  - `run_fallbacks(driver, state)`: Executes fallback actions.
 
 ## WebGraph Class
 
@@ -98,8 +98,8 @@ Manages execution flow of interconnected `ActionNode`s.
 driver = webdriver.Chrome()
 graph = WebGraph(driver)
 
-fill_node = ActionNode(name="FillForm", action=fill_form)
-submit_node = ActionNode(name="SubmitForm", action=click_submit)
+fill_node = ActionNode(name="FillForm", actions=[fill_form])
+submit_node = ActionNode(name="SubmitForm", actions=[click_submit])
 
 graph.add_edge_node(fill_node)
 graph.add_edge_node(submit_node)
@@ -107,14 +107,13 @@ graph.add_edge_node(submit_node)
 await graph.run()
 ```
 
-If a simple action without condition and/or fallback must be executed, instead of a node, can be added a step, basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last current node setted. The `add_step` method returns the created `ActionNode`.
+If a simple list of actions without conditions and/or fallbacks must be executed, instead of a node, can be added a step, basically a minimal `ActionNode` with a name and a list of actions. This `ActionNode` is attached to the last added node or the last current node setted. The `add_step` method returns the created `ActionNode`.
 
 ```python
 driver = webdriver.Chrome()
 graph = WebGraph(driver)
 
-graph.add_step("FillForm", fill_form)
-graph.add_step("SubmitForm", click_submit)
+graph.add_step("Form", [fill_form, click_submit])
 
 await graph.run()
 ```
