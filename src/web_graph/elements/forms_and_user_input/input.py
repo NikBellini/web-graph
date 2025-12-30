@@ -19,7 +19,7 @@ class Input(Element):
         is fixed to `input`. If passed, be sure that the XPath points to an element
         with the `input` tag.
         """
-        super.__init__(tag="input", **kwargs)
+        super().__init__(tag="input", **kwargs)
 
     def send_keys(self, keys: str) -> Callable[[WebDriver], None]:
         """Returns a function that sends the keys to the Input Element."""

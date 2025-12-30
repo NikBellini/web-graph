@@ -16,7 +16,7 @@ class Button(Element):
         is fixed to `button`. If passed, be sure that the XPath points to an element
         with the `button` tag.
         """
-        super.__init__(
+        super().__init__(
             tag="button",
             **kwargs,
         )

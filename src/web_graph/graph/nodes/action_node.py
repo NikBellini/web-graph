@@ -22,10 +22,10 @@ ConditionType = (
 
 class ActionNodeSettings(BaseModel):
     name: str
-    actions: list[ActionType] = []
-    conditions: list[ConditionType] = []
-    fallback_actions: list[ActionType] = []
-    fallback_action_max_retries: int | None = None
+    actions: list[ActionType]
+    conditions: list[ConditionType]
+    fallback_actions: list[ActionType]
+    fallback_action_max_retries: int | None
 
 
 class ActionNode:
