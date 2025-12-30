@@ -1,5 +1,5 @@
-from typing import Callable, Dict
-from pydantic import BaseModel
+from typing import Callable
+from pydantic import BaseModel, model_validator
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -23,21 +23,29 @@ class ElementSettings(BaseModel):
     index: int | None = None
     xpath: str | None = None
 
+    @model_validator(mode="after")
+    def field_validation(self):
+        at_least_one_attribute_passed = any([self.id, self.name, self.class_names, self.attrs, self.index])
+
+        # Check that the xpath or other attributes are passed and not both
+        if self.xpath and at_least_one_attribute_passed:
+            ValueError(
+                "You can pass only attributes like ID, name etc. OR the XPath."
+            )
+
+        # Check if at least one attribute or xpath is passed
+        if not self.xpath and not self.tag and not at_least_one_attribute_passed:
+            ValueError("You must pass at least one attribute like tag, ID, XPath etc.")
+
+        return self
+
 
 class Element:
-    """
-    Represents a structured HTML element locator for use in web automation.
-
-    An Element can be defined using standard attributes such as tag, id, name,
-    class names, and other HTML attributes, or by providing a complete XPath.
-    It stores these criteria internally in an `ElementSettings` object and can
-    dynamically build a CSS selector to locate the element in Selenium.
-    """
-
-    _settings: ElementSettings
+    """Represents a structured HTML element locator for use in web automation."""
 
     def __init__(
         self,
+        *,
         tag: str | None = None,
         id: str | None = None,
         name: str | None = None,
@@ -53,6 +61,11 @@ class Element:
             - Either XPath or other attributes can be provided, but not both.
             - At least one attribute or XPath must be specified.
 
+        NOTE: tag and XPath can be both passed. If the XPath is passed, the tag will be ignored,
+        so in a custom element, the fact that the XPath points to the web element of the custom element
+        tag must be handled by the user. Using a custom element for a not intended tag can cause
+        the element to break.
+
         Args:
             tag (str | None): The HTML tag of the element (e.g., "input", "div").
             id (str | None): The id attribute of the element.
@@ -62,28 +75,15 @@ class Element:
             index (int | None): The index of the element if more than one is found.
             xpath (str | None): An XPath string that directly locates the element.
         """
-        at_least_one_attribute_passed = any([tag, id, name, class_names, attrs, index])
-
-        if xpath and at_least_one_attribute_passed:
-            ValueError(
-                "You can pass only attributes like tag, ID, name etc. OR the XPath."
-            )
-
-        if not xpath and tag is None and not at_least_one_attribute_passed:
-            ValueError("You must pass at least one attribute like tag, ID, XPath etc.")
-
-        if xpath:
-            self._settings = ElementSettings(xpath=xpath)
-
-        if at_least_one_attribute_passed:
-            self._settings = ElementSettings(
-                tag=tag,
-                id=id,
-                name=name,
-                class_names=class_names,
-                attrs=attrs,
-                index=index,
-            )
+        self._settings = ElementSettings(
+            xpath=xpath,
+            tag=tag,
+            id=id,
+            name=name,
+            class_names=class_names,
+            attrs=attrs,
+            index=index
+        )
 
     def retrieve(self, driver: WebDriver) -> WebElement:
         """
@@ -99,7 +99,6 @@ class Element:
         Raises:
             ElementNotFoundError: If the element is not found.
             ElementNotUniqueError: If the element is not unique and an index is not given.
-            TimeoutException: If the element is not found in the page for 10 seconds.
         """
         # Search by XPath
         if self._settings.xpath:
@@ -111,17 +110,20 @@ class Element:
         # Search by selector
         selector = self._build_css_selector()
 
-        # Wait to retrieve the single element if the index is not defined,
-        # else wait until the index element is loaded
-        if self._settings.index is None:
-            WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-            )
-        else:
-            WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
-                lambda d: len(d.find_elements(By.CSS_SELECTOR, selector))
-                >= self._settings.index
-            )
+        try:
+            # Wait to retrieve the single element if the index is not defined,
+            # else wait until the index element is loaded
+            if self._settings.index is None:
+                WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                )
+            else:
+                WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
+                    lambda d: len(d.find_elements(By.CSS_SELECTOR, selector))
+                    >= self._settings.index
+                )
+        except TimeoutError:
+            raise ElementNotFoundError(selector)
 
         elements = driver.find_elements(By.CSS_SELECTOR, selector)
 
@@ -139,82 +141,30 @@ class Element:
 
         return elements[self._settings.index]
 
-    def get_text(self) -> Callable[[WebDriver], str]:
-        """Returns a function that retrieves the text inside the Element."""
-
-        def f(driver: WebDriver) -> str:
-            return self.retrieve(driver).text
-
-        return f
-
-    def get_tag_name(self) -> Callable[[WebDriver], str]:
-        """Returns a function that retrieves the tag_name of the Element."""
-
-        def f(driver: WebDriver) -> str:
-            return self.retrieve(driver).tag_name
-
-        return f
-
-    def get_attribute(self, name: str) -> Callable[[WebDriver], str]:
-        """Returns a function that retrieves the attribute by it's name."""
-
-        def f(driver: WebDriver) -> str:
-            return self.retrieve(driver).get_attribute(name)
-
-        return f
-
-    def value_of_css_property(self, name: str) -> Callable[[WebDriver], Dict]:
-        """Returns a function that retrieves the value_of_css_property by it's name."""
-
-        def f(driver: WebDriver) -> Dict:
-            return self.retrieve(driver).value_of_css_property(name)
-
-        return f
-
-    def get_location(self) -> Callable[[WebDriver], Dict]:
-        """Returns a function that retrieves the location of the Element."""
-
-        def f(driver: WebDriver) -> Dict:
-            return self.retrieve(driver).location
-
-        return f
-
-    def get_size(self) -> Callable[[WebDriver], Dict]:
-        """Returns a function that retrieves the size of the Element."""
-
-        def f(driver: WebDriver) -> Dict:
-            return self.retrieve(driver).size
-
-        return f
-
-    def get_rect(self) -> Callable[[WebDriver], Dict]:
-        """Returns a function that retrieves the rect of the Element."""
-
-        def f(driver: WebDriver) -> Dict:
-            return self.retrieve(driver).rect
-
-        return f
-
     def is_displayed(self) -> Callable[[WebDriver], bool]:
-        """Returns a function that retrieves checks if the Element is displayed."""
-
+        """Returns a function that checks if the Element is displayed."""
         def f(driver: WebDriver) -> bool:
             return self.retrieve(driver).is_displayed()
 
         return f
 
     def is_enabled(self) -> Callable[[WebDriver], bool]:
-        """Returns a function that retrieves checks if the Element is enabled."""
-
+        """Returns a function that checks if the Element is enabled."""
         def f(driver: WebDriver) -> bool:
             return self.retrieve(driver).is_enabled()
 
         return f
+    
+    def text_contains(self, text: str) -> Callable[[WebDriver], bool]:
+        """Returns a function that check if the element contains the given text."""
+        def f(driver: WebDriver) -> bool:
+            return text in self.retrieve(driver).text
+        
+        return f
 
     def click(self) -> Callable[[WebDriver], None]:
         """Returns a function that clicks the Element."""
-
-        def f(driver: WebDriver):
+        def f(driver: WebDriver) -> None:
             self.retrieve(driver).click()
 
         return f

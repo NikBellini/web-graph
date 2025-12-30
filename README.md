@@ -15,7 +15,9 @@ with a **flexible element locator system**.
 
 ## Installation
 
-(To define)
+```
+pip install git+https://github.com/NikBellini/web-graph.git
+```
 
 > Make sure the appropriate WebDriver (Chrome, Firefox, etc.) is installed.
 
@@ -45,14 +47,7 @@ web_element = element.retrieve(driver)  # Returns Selenium WebElement
   - `retrieve(driver)`: Returns the Selenium `WebElement` or raises:
     - `ElementNotFoundError`
     - `ElementNotUniqueError`
-    - `TimeoutException`
-  - `get_text()`: Returns a function that retrieves the visible text of the element.
-  - `get_tag_name()`: Returns a function that retrieves the tag name of the element.
-  - `get_attribute(name)`: Returns a function that retrieves the value of the specified HTML attribute.
-  - `value_of_css_property(name)`: Returns a function that retrieves the computed value of the CSS property.
-  - `get_location()`: Returns a function that retrieves the element's coordinates: `{'x': ..., 'y': ...}`.
-  - `get_size()`: Returns a function that retrieves the element's size: `{'height': ..., 'width': ...}`.
-  - `get_rect()`: Returns a function that retrieves the element's rectangle: `{'x':..., 'y':..., 'height':..., 'width':...}`.
+  - `text_contains(text)`: Returns a function that checks if the text is contained in the element text.
   - `is_displayed()`: Returns a function that returns `True` if the element is visible.
   - `is_enabled()`: Returns a function that returns `True` if the element is enabled/interactable.
   - `click()`: Returns a function that clicks the element.
