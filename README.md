@@ -4,6 +4,12 @@
 It combines a **graph-based approach** for defining action sequences 
 with a **flexible element locator system**.
 
+> [!WARNING]
+> **WebGraph is a personal project developed for personal use and is currently in development.**
+>
+> This software is a personal project currently in development and not ready for a production environment. 
+> As this is in development and for personal use, any element can change without notice, until an eventually **1.0** version.
+
 ## Features
 
 - **Graph-based automation**: Define browser interactions as nodes in a directed graph (`WebGraph`).
