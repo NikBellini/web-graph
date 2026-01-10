@@ -48,7 +48,7 @@ This makes it possible to define a single logical element (e.g. a list of button
 ### Usage
 
 ```python
-from elements import Element
+from web_graph.elements import Element
 
 buttons = Element(
     tag="button",
@@ -100,6 +100,15 @@ They do **not** execute immediately.
 * `click(index: int | None = None)`
 
   * Returns a function that clicks the selected element.
+
+### Specific classes
+
+There are also a list of specific classes that expand the `Element` class:
+
+* Button
+* Input
+
+> When using a specific class and the XPath to identify specific elements, be sure that the XPath points to an element with the given tag. If for example an `Input` element points to a `button`, when executing an action, errors can occur. This is a user responsability.
 
 ### Validation rules
 
@@ -170,6 +179,12 @@ If you only need a simple list of actions (without conditions or fallbacks), you
 A step is a minimal `ActionNode` with just a name and actions.
 
 ```python
+from selenium import webdriver
+from web_graph.graph import WebGraph, ActionNode
+
+driver = webdriver.Chrome()
+graph = WebGraph(driver)
+
 graph.add_step("Form", [fill_form, click_submit])
 
 await graph.run()
