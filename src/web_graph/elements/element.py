@@ -198,8 +198,8 @@ class Element:
         the current page.
 
         Returns:
-            Callable[[WebDriver], bool]: A function that checks if the current Element has at least one WebElement inside
-                the current page.
+            Callable[[WebDriver], bool]: A function that checks if the current Element has at least
+                one WebElement inside the current page.
         """
         try:
             self.retrieve()
