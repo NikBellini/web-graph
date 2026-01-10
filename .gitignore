@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Testing
+src/webdriver
+src/main.py

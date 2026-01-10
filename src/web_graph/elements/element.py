@@ -4,14 +4,16 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from web_graph.elements.elements_exceptions import (
+    ElementError,
     ElementNotFoundError,
-    ElementNotUniqueError,
+    PageTimeoutError,
 )
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
 
 
 FIND_ELEMENTS_TIMEOUT = 10
+STALE_ELEMENTS_RETRIES = 3
 
 
 class ElementSettings(BaseModel):
@@ -22,9 +24,13 @@ class ElementSettings(BaseModel):
     attrs: dict[str, str] | None = None
     index: int | None = None
     xpath: str | None = None
+    contains_text: list[str] | None = None
+    matches_text: str | None = None
+    contains_html: list[str] | None = None
+    matches_html: str | None = None
 
     @model_validator(mode="after")
-    def field_validation(self):
+    def selector_field_validation(self):
         at_least_one_attribute_passed = any(
             [self.id, self.name, self.class_names, self.attrs, self.index]
         )
@@ -41,7 +47,11 @@ class ElementSettings(BaseModel):
 
 
 class Element:
-    """Represents a structured HTML element locator for use in web automation."""
+    """
+    Represents a structured HTML element locator for use in web automation.
+
+    A single Element can represent multiple Selenium WebElements of the page.
+    """
 
     def __init__(
         self,
@@ -53,6 +63,10 @@ class Element:
         attrs: dict[str, str] | None = None,
         index: int | None = None,
         xpath: str | None = None,
+        contains_text: list[str] | None = None,
+        matches_text: str | None = None,
+        contains_html: list[str] | None = None,
+        matches_html: str | None = None,
     ):
         """
         Initializes the Element.
@@ -74,6 +88,10 @@ class Element:
             attrs (dict[str, str] | None): A dictionary of other HTML attributes to match.
             index (int | None): The index of the element if more than one is found.
             xpath (str | None): An XPath string that directly locates the element.
+            contains_text (list[str] | None): The texts that the element must contain.
+            matches_text(str | None): The text that the element must match.
+            contains_html (list[str] | None): The HTMLs that the element must contain
+            matches_html (str | None): The HTML that the element must match.
         """
         self._settings = ElementSettings(
             xpath=xpath,
@@ -83,93 +101,185 @@ class Element:
             class_names=class_names,
             attrs=attrs,
             index=index,
+            contains_text=contains_text,
+            matches_text=matches_text,
+            contains_html=contains_html,
+            matches_html=matches_html,
         )
 
-    def retrieve(self, driver: WebDriver) -> WebElement:
+    def retrieve(self, driver: WebDriver) -> list[WebElement]:
         """
-        Retrieves the WebElement corresponding to the current settings.
+        Retrieves the WebElements corresponding to the current settings.
         Uses CSS selector unless an XPath is defined.
 
         Args:
             driver (WebDriver): The WebDriver where to retrieve the element.
 
         Returns:
-            WebElement: The WebElement retrieved from the page.
+            list[WebElement]: The list WebElement retrieved from the page. If an
+                index is setted, the list will contain the single element.
 
         Raises:
             ElementNotFoundError: If the element is not found.
-            ElementNotUniqueError: If the element is not unique and an index is not given.
+            PageTimeoutError: If the page is not fully loaded until the timeout occurs.
         """
-        # Search by XPath
         if self._settings.xpath:
-            WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
-                EC.presence_of_element_located((By.XPATH, self._settings.xpath))
-            )
-            return driver.find_element(By.XPATH, self._settings.xpath)
-
-        # Search by selector
-        selector = self._build_css_selector()
+            search_by = By.XPATH
+            selector = self._settings.xpath
+        else:
+            search_by = By.CSS_SELECTOR
+            selector = self._build_css_selector()
 
         try:
-            # Wait to retrieve the single element if the index is not defined,
-            # else wait until the index element is loaded
-            if self._settings.index is None:
-                WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                )
-            else:
-                WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
-                    lambda d: len(d.find_elements(By.CSS_SELECTOR, selector))
-                    >= self._settings.index
-                )
+            WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
         except TimeoutError:
-            raise ElementNotFoundError(selector)
+            raise PageTimeoutError(
+                "Timeout occurred while waiting for the page to fully load."
+            )
 
-        elements = driver.find_elements(By.CSS_SELECTOR, selector)
+        # Because the reference to an element can be stale, try to retrieve it again until the max
+        # number of attempts is reached
+        error_messages = []
+        for _ in range(STALE_ELEMENTS_RETRIES):
+            try:
+                elements = WebDriverWait(driver, FIND_ELEMENTS_TIMEOUT).until(
+                    lambda d: d.find_elements(search_by, selector)
+                )
 
-        if not elements:
-            raise ElementNotFoundError(selector)
+                if not elements:
+                    raise ElementNotFoundError(
+                        f"Element not found for selector: {selector}"
+                    )
 
-        # By default if there is only one element and the index is
-        # not defined, the first element is returned
-        if len(elements) == 1 and not self._settings.index:
-            return elements[0]
+                # Filter the elements based on text or HTML
+                filtered_elements: list[WebElement] = []
+                for element in elements:
+                    text = element.text
+                    outer_html = element.get_attribute("outerHTML")
 
-        # Can't select the correct element because more than one is found
-        if len(elements) > 1 and not self._settings.index:
-            raise ElementNotUniqueError(selector)
+                    if self._settings.contains_text is not None:
+                        if not all(sub in text for sub in self._settings.contains_text):
+                            continue
 
-        return elements[self._settings.index]
+                    if self._settings.matches_text is not None:
+                        if self._settings.matches_text != text:
+                            continue
 
-    def is_displayed(self) -> Callable[[WebDriver], bool]:
-        """Returns a function that checks if the Element is displayed."""
+                    if self._settings.contains_html is not None:
+                        if not all(
+                            sub in outer_html for sub in self._settings.contains_html
+                        ):
+                            continue
+
+                    if self._settings.matches_html is not None:
+                        if self._settings.matches_html != outer_html:
+                            continue
+
+                    filtered_elements.append(element)
+
+                # By default, if there is only one element and the index is
+                # not defined, all the elements are returned
+                if self._settings.index is None:
+                    return filtered_elements
+
+                return [filtered_elements[self._settings.index]]
+            except StaleElementReferenceException as e:
+                error_messages.append(e.msg)
+
+        raise ElementError(
+            f"An exception occurred when retrieving the object. Error messages: {error_messages}"
+        )
+
+    def exists(self) -> Callable[[WebDriver], bool]:
+        """
+        Returns a function that checks if the current Element has at least one WebElement inside
+        the current page.
+
+        Returns:
+            Callable[[WebDriver], bool]: A function that checks if the current Element has at least one WebElement inside
+                the current page.
+        """
+        try:
+            self.retrieve()
+            return True
+        except ElementNotFoundError:
+            return False
+
+    def is_displayed(self, index: int | None = None) -> Callable[[WebDriver], bool]:
+        """
+        Returns a function that checks if the Elements are displayed.
+
+        Args:
+            index (int | None): The index of the element to check. If not passed,
+                the function will check every element.
+
+        Returns:
+            Callable[[WebDriver], bool]: A function that checks if the elements are displayed.
+        """
 
         def f(driver: WebDriver) -> bool:
-            return self.retrieve(driver).is_displayed()
+            elements = self.retrieve(driver)
+
+            if index is not None:
+                return elements[index].is_displayed()
+
+            for element in elements:
+                if not element.is_displayed():
+                    return False
+
+            return True
 
         return f
 
-    def is_enabled(self) -> Callable[[WebDriver], bool]:
-        """Returns a function that checks if the Element is enabled."""
+    def is_enabled(self, index: int | None = None) -> Callable[[WebDriver], bool]:
+        """
+        Returns a function that checks if the Element is enabled.
+
+        Args:
+            index (int | None): The index of the element to check. If not passed,
+                the function will check every element.
+
+        Returns:
+            Callable[[WebDriver], bool]: A function that checks if the elements are enabled.
+        """
 
         def f(driver: WebDriver) -> bool:
-            return self.retrieve(driver).is_enabled()
+            elements = self.retrieve(driver)
+
+            if index is not None:
+                return elements[index].is_enabled()
+
+            for element in elements:
+                if not element.is_enabled():
+                    return False
+
+            return True
 
         return f
 
-    def text_contains(self, text: str) -> Callable[[WebDriver], bool]:
-        """Returns a function that check if the element contains the given text."""
+    def click(self, index: int | None = None) -> Callable[[WebDriver], None]:
+        """
+        Returns a function that clicks the Elements.
 
-        def f(driver: WebDriver) -> bool:
-            return text in self.retrieve(driver).text
+        Args:
+            index (int | None): The index of the element to click. If not passed,
+                the function will click every element.
 
-        return f
-
-    def click(self) -> Callable[[WebDriver], None]:
-        """Returns a function that clicks the Element."""
+        Returns:
+            Callable[[WebDriver], None]: A functions that clicks the elements.
+        """
 
         def f(driver: WebDriver) -> None:
-            self.retrieve(driver).click()
+            elements = self.retrieve(driver)
+
+            if index is not None:
+                elements[index].click()
+                return
+
+            for element in elements:
+                element.click()
 
         return f
 
