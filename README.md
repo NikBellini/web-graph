@@ -1,23 +1,24 @@
 # WebGraph
 
-`WebGraph` is a Python library for structured web automation using Selenium. 
-It combines a **graph-based approach** for defining action sequences 
-with a **flexible element locator system**.
+`WebGraph` is a Python library for structured web automation using Selenium.
+It combines a **graph-based approach** for defining action sequences with a **flexible element locator system**.
 
 > [!WARNING]
 > **WebGraph is a personal project developed for personal use and is currently in development.**
 >
-> This software is a personal project currently in development and not ready for a production environment. 
+> This software is a personal project currently in development and not ready for a production environment.
 > As this is in development and for personal use, any element can change without notice, until an eventually **1.0** version.
 
 ## Features
 
-- **Graph-based automation**: Define browser interactions as nodes in a directed graph (`WebGraph`).
-- **Conditional execution**: Run actions only when conditions are met.
-- **Fallback handling & retries**: Specify fallback actions with max retry limits.
-- **State sharing**: Pass a dictionary across nodes to persist data.
-- **Flexible element locating**: Use the `Element` class to define HTML elements via tag, id, classes, attributes, index, or XPath.
-- **Asynchronous support**: All actions and conditions can be sync or async.
+* **Graph-based automation**: Define browser interactions as nodes in a directed graph (`WebGraph`).
+* **Conditional execution**: Run actions only when conditions are met.
+* **Fallback handling & retries**: Specify fallback actions with max retry limits.
+* **State sharing**: Pass a dictionary across nodes to persist data.
+* **Flexible element locating**: Use the `Element` class to define HTML elements via tag, id, classes, attributes, XPath, and index.
+* **Multiple WebElement support**: A single `Element` definition can resolve to **multiple Selenium `WebElement`s**.
+* **Indexed actions**: Every element action supports an `index` parameter to precisely target which resolved element to interact with.
+* **Asynchronous support**: All actions and conditions can be sync or async.
 
 ## Installation
 
@@ -30,44 +31,86 @@ pip install git+https://github.com/NikBellini/web-graph.git
 ## Element Class
 
 `Element` provides a structured way to locate HTML elements for Selenium automation.
-The element is not searched until a method that needs it is called.
+The element lookup is **lazy**: elements are not searched until a method that needs them is executed.
+
+### Key concepts
+
+* An `Element` can match **one or more** Selenium `WebElement`s.
+* Resolution always produces a **list of WebElements** internally.
+* If multiple elements are found, you can:
+
+  * Provide a default `index` in the `Element` definition,
+  * Specify an `index` directly when calling an action or condition method or
+  * Execute the action or condition directly on all the HTML elements.
+
+This makes it possible to define a single logical element (e.g. a list of buttons) and interact with a specific one, or all of them, at runtime.
 
 ### Usage
 
 ```python
-from elements.element import Element
+from elements import Element
 
-element = Element(
+buttons = Element(
     tag="button",
-    id="my-button",
-    class_names=["visible", "red", "clickable"],
-    attrs={"data-role": "primary-button"}
+    class_names=["action-btn"]
 )
 
-web_element = element.retrieve(driver)  # Returns Selenium WebElement
+# Click the first matching button
+click_first = buttons.click(index=0)
+
+# Check visibility of the second button
+is_second_visible = buttons.is_displayed(index=1)
 ```
 
-- **Parameters**:
-  - `tag`, `id`, `name`, `class_names`, `attrs`, `index`, `xpath`
-- **Methods**:
-  - `retrieve(driver)`: Returns the Selenium `WebElement` or raises:
-    - `ElementNotFoundError`
-    - `ElementNotUniqueError`
-  - `text_contains(text)`: Returns a function that checks if the text is contained in the element text.
-  - `is_displayed()`: Returns a function that returns `True` if the element is visible.
-  - `is_enabled()`: Returns a function that returns `True` if the element is enabled/interactable.
-  - `click()`: Returns a function that clicks the element.
+### Parameters
 
-- **Validation rules**:
-  - Either XPath **or** other attributes can be provided, not both.
-  - At least one attribute or XPath must be specified.
-  - If multiple elements match and no index is provided `ElementNotUniqueError` is raised.
+* `tag`
+* `id`
+* `name`
+* `class_names`
+* `attrs`
+* `xpath`
+* `index`
+* `contains_text`
+* `matches_text`
+* `contains_html`
+* `matches_html`
 
-> Each method returns a function that accepts a `WebDriver` as argument and doesn't execute directly the action. Because every method uses `retrieve`, the exceptions raised inside the other methods are the same raised inside `retrieve`.
+### Methods
+
+All methods return **callables** that accept a `WebDriver` (and optionally `state`).
+They do **not** execute immediately.
+
+* `retrieve(driver, index=None)`
+
+  * Returns a Selenium `WebElement`
+  * Raises:
+
+    * `ElementNotFoundError`
+    * `ElementError`
+
+* `is_displayed(index: int | None = None)`
+
+  * Returns a function that checks if the element is visible.
+
+* `is_enabled(index: int | None = None)`
+
+  * Returns a function that checks if the element is enabled/interactable.
+
+* `click(index: int | None = None)`
+
+  * Returns a function that clicks the selected element.
+
+### Validation rules
+
+* Either XPath **or** other attributes can be provided, not both.
+* At least one attribute or XPath must be specified.
+
+> Because every method internally uses `retrieve`, the exceptions raised by actions and conditions methods are the same raised by `retrieve`.
 
 ## ActionNode Class
 
-Represents a single executable action in a `WebGraph`.
+Represents a list of executable actions in a `WebGraph`.
 
 ```python
 from web_graph import ActionNode
@@ -83,24 +126,32 @@ node = ActionNode(
 )
 ```
 
-- **Parameters**:
-  - `name`: The name of the node.
-  - `actions`: List of callable executed by the node.
-  - `conditions`: Optional list of callable returning a boolean.
-  - `fallback_action`: Optional list of callable executed if no node runs.
-  - `fallback_action_max_retries`: Maximum number of fallback retries.
-> `driver` and `state` can be omitted in `action`, `condition` and `fallback_action`. If needed `driver` and `state` can be defined as kwargs in the function signature. If passed any other argument, an error will occurr.
+### Parameters
 
-- **Methods**:
-  - `run(driver, state)`: Executes the node action.
-  - `run_conditions(driver, state)`: Evaluates the conditions (default True if not defined).
-  - `run_fallbacks(driver, state)`: Executes fallback actions.
+* `name`: The name of the node.
+* `actions`: List of callables executed by the node.
+* `conditions`: Optional list of callables returning a boolean.
+* `fallback_actions`: Optional list of callables executed if the node fails.
+* `fallback_action_max_retries`: Maximum number of fallback retries.
+
+> `driver` and `state` can be omitted in `action`, `condition` and `fallback_action`.
+> If needed, `driver` and `state` can be defined as kwargs in the function signature.
+> Passing any other argument will raise an error.
+
+### Methods
+
+* `run(driver, state)`: Executes the node actions.
+* `run_conditions(driver, state)`: Evaluates the conditions (defaults to `True` if not defined).
+* `run_fallbacks(driver, state)`: Executes fallback actions.
 
 ## WebGraph Class
 
 Manages execution flow of interconnected `ActionNode`s.
 
 ```python
+from selenium import webdriver
+from web_graph.graph import WebGraph, ActionNode
+
 driver = webdriver.Chrome()
 graph = WebGraph(driver)
 
@@ -113,41 +164,59 @@ graph.add_edge_node(submit_node)
 await graph.run()
 ```
 
-If a simple list of actions without conditions and/or fallbacks must be executed, instead of a node, can be added a step, basically a minimal `ActionNode` with a name and a list of actions. This `ActionNode` is attached to the last added node or the last current node setted. The `add_step` method returns the created `ActionNode`.
+### Steps shortcut
+
+If you only need a simple list of actions (without conditions or fallbacks), you can add a **step**.
+A step is a minimal `ActionNode` with just a name and actions.
 
 ```python
-driver = webdriver.Chrome()
-graph = WebGraph(driver)
-
 graph.add_step("Form", [fill_form, click_submit])
 
 await graph.run()
 ```
 
-- **Features**:
-  - Conditional branching
-  - Sequential execution
-  - Fallback retries
-  - Shared state across nodes
+The created `ActionNode` is automatically attached to the last added or current node.
 
-- **Methods**:
-  - `add_edge_node(node, starting_node)`: Adds a node to the graph. If the starting node is not given, the given node will be attached to the last added node. At start the default starting node is `START`.
-  - `add_step(name, action)`: Adds a step to the graph that is basically a minimal `ActionNode` with a name and an action. This `ActionNode` is attached to the last added node or the last current node setted. At start the default starting node is `START`. Returns the created `ActionNode`.
-  - `set_current_node(node)`: Sets the given node as current node if the given node exists in the graph.
-  - `run()`: Executes the graph from the START node.
+### Features
 
-- **Special nodes**:
-  - START: Entry point.
-  - END: Marks the end of the graph.
+* Conditional branching
+* Sequential execution
+* Fallback retries
+* Shared state across nodes
+
+### Methods
+
+* `add_edge_node(node, starting_node=None)`
+
+  * Adds a node to the graph.
+  * If `starting_node` is not provided, the node is attached to the last added node.
+  * The default starting node is `START`.
+
+* `add_step(name, actions)`
+
+  * Adds a minimal `ActionNode` and attaches it to the current node.
+  * Returns the created `ActionNode`.
+
+* `set_current_node(node)`
+
+  * Sets the given node as the current node if it exists in the graph.
+
+* `run()`
+
+  * Executes the graph starting from the `START` node.
+
+### Special nodes
+
+* `START`: Entry point of the graph.
+* `END`: Marks the end of execution.
 
 ## Exception Handling
 
-- `ElementNotFoundError`: Raised if no element matches the locator.
-- `ElementNotUniqueError`: Raised if multiple elements match and no index is provided.
-- `MaxFallbackRetriesReachedError`: Raised when max fallback retries are exceeded.
+* `ElementNotFoundError`: Raised if no element matches the locator.
+* `MaxFallbackRetriesReachedError`: Raised when max fallback retries are exceeded.
 
 ## TODO
 
-- Definition of actions like scroll, reload, go to etc.
-- Definition of other classes children of `Element` like `Button`, `Input` etc.
-- Fix README examples.
+* Define common actions like scroll, reload, navigation, etc.
+* Introduce specialized `Element` subclasses such as `Button`, `Input`, etc.
+* Improve and expand README examples.
