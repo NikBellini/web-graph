@@ -105,8 +105,8 @@ They do **not** execute immediately.
 
 There are also a list of specific classes that expand the `Element` class:
 
-* Button
-* Input
+* `Button`
+* `Input`
 
 > When using a specific class and the XPath to identify specific elements, be sure that the XPath points to an element with the given tag. If for example an `Input` element points to a `button`, when executing an action, errors can occur. This is a user responsability.
 
